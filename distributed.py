@@ -9,6 +9,19 @@ from single_agent_planner import compute_heuristics, a_star, get_sum_of_cost
 from distributed_agent_class import DistributedAgent
 from cbs import detect_collision, detect_collisions
 
+#SOPE DEFINITION
+#Function 1: input = map, current location -> output = map of 0s and 1s
+
+#DETECT AGENT
+#Function 2: input = map of 0s and 1s, current location all agents -> if agent detected, then output = detected agent's object
+
+#DETECT CONFLICT + COMMUNICATION
+#Function 3: input = agent object -> output = True/False conflict detection
+#if conflict detected, shortest path without passing conflict point, slowest path 'wins' -> output = path update for agent who 'lost'
+
+#LATER ON WE WILL UITBREIDEN TO MULTIPLE AGENTS IN SAME SCOPE AND SEE HOW THAT WORKS
+
+
 class DistributedPlanningSolver(object):
     """A distributed planner"""
 
