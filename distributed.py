@@ -7,6 +7,7 @@ Code in this file is just provided as guidance, you are free to deviate from it.
 import time as timer
 from single_agent_planner import compute_heuristics, a_star, get_sum_of_cost
 from distributed_agent_class import DistributedAgent
+import numpy as np
 from cbs import detect_collision, detect_collisions
 
 #SOPE DEFINITION
@@ -37,7 +38,44 @@ class DistributedPlanningSolver(object):
         self.num_of_agents = len(goals)
         self.heuristics = []
         # T.B.D.
-        
+
+    def define_scope(self, result, timestep, agentID1, scope_rad=2):
+        complete_map = np.zeros_like(self.my_map)
+        for row in self.my_map:
+            for cell in self.my_map[row]:
+                if not cell:
+                    complete_map[row][cell] = 1
+
+        neighbors = [(i, j) for i in range(-scope_rad, scope_rad + 1) for j in range(-scope_rad, scope_rad + 1)]
+
+        (center_row, center_col) = result[agentID1][timestep]
+        scope_map = np.copy(complete_map)
+        for i in range(len(complete_map)):
+            for j in range(len(complete_map[i])):
+                distance = abs(center_row - i) + abs(center_col - j)  # Manhattan distance
+                if distance > scope_rad:
+                    scope_map[i][j] = 0
+                # if any(abs(row - i) > scope_rad or abs(col - j) > scope_rad for row, col in neighbors):
+                #     scope_map[i][j] = 0
+
+        return scope_map
+
+        # for dr, dc in neighbors:
+        #     for row in complete_map:
+        #         for column in complete_map[row]:
+        #             new_row, new_col = row + dr, column + dc
+        #             if 0 <= new_row < len(complete_map) and 0 <= new_col<=len(complete_map[row]):
+        #                 if complete_map[row][column] == :
+        #
+        #                     complete_map[new_row][new_col] =
+
+        # for all_agents in range(self.num_of_agents):
+        #     if agentID1 != all_agents:
+        #         if result[agentID1][timestep] == result[all_agents][timestep]:
+        #             complete_map
+        #
+
+
     def find_solution(self):
         """
         Finds paths for all agents from start to goal locations. 
@@ -54,6 +92,7 @@ class DistributedPlanningSolver(object):
         # Create agent objects with DistributedAgent class
         for i in range(self.num_of_agents):
             newAgent = DistributedAgent(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i)
+
         
         
         # Print final output
