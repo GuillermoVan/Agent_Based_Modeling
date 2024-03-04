@@ -64,21 +64,21 @@ class DistributedPlanningSolver(object):
 
         time = 0
         arrived = []
-        #while not all agents have reached their target
-        #while len(arrived) < len(self.distributed_agents):
-            #for agent in distributed_agent
-            #for agent in self.distributed_agents:
-                # make current scope map for this agent
-                # detected_agents = []
-                # detect agents in current scope map and append to list
-                # for detected_agent in detected_agents
-                    # if detected agent's path intersects with own path:
-                        # evaluate new route (without conflict) current agent
-                        # evaluate new route (without conflict) detected agent
-                         # update route of agent with fasted evaluated route
-        time += 1
 
-    return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
+        #while not all agents have reached their target
+        while len(arrived) < len(self.distributed_agents):
+            for i in range(self.num_of_agents):
+                scope_map = define_scope(self, result, time, i, scope_rad=2)
+                agents_in_scope = detect_agent_in_scope(self, i, scope_map)
+                for j in agents_in_scope:
+                    result = conflict(self, result, i, j, time)
+
+                if result[i][time] == self.goals[i]:
+                    arrived.append(i)
+
+            time += 1
+
+        return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
 
     def define_scope(self, result, timestep, agentID1, scope_rad=2):
         complete_map = np.zeros_like(self.my_map)
