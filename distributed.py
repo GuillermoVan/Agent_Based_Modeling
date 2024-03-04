@@ -60,7 +60,6 @@ class DistributedPlanningSolver(object):
 
         return scope_map
 
-def
     def conflict(self, result, agentID_1, agentID_2, curr_time):
         for i in range(3):  # Communicate 3 time steps
             avoidance = False
@@ -118,7 +117,7 @@ def
             else:
                 avoidance = True
 
-    return result, constraints
+        return result, constraints
 
         # for dr, dc in neighbors:
         #     for row in complete_map:
