@@ -15,7 +15,7 @@ from distributed import DistributedPlanningSolver # Placeholder for Distributed 
 from visualize import Animation
 from single_agent_planner import get_sum_of_cost
 
-SOLVER = "Distributed"
+SOLVER = "Prioritized"
 
 def print_mapf_instance(my_map, starts, goals):
     """

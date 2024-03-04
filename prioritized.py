@@ -28,7 +28,12 @@ class PrioritizedPlanningSolver(object):
         start_time = timer.time()
         result = []
         constraints = []
-
+        constraints.append({'positive': False,
+                            'negative': True,
+                            'agent': 1,
+                            'loc': [(1,4)],
+                            'timestep': 2
+                })
         # VERTEX CONSTRAINT EXAMPLE
         '''
         constraints.append({'positive': False,

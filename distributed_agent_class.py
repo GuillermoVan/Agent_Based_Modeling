@@ -16,15 +16,14 @@ class DistributedAgent(object):
         goals       - (x1, y1) goal location
         heuristics  - heuristic to goal location
         """
-        constraints = []
         self.my_map = my_map
         self.start = start
         self.goal = goal
         self.id = agent_id
         self.heuristics = heuristics
-        self.path = self.find_solution(constraints)
+        self.path = self.find_solution()
 
-    def find_solution(self, constraints):
+    def find_solution(self, constraints=[]):
         """ Finds paths for all agents from their start locations to their goal locations."""
 
         start_time = timer.time()
@@ -41,8 +40,8 @@ class DistributedAgent(object):
 
         self.CPU_time = timer.time() - start_time
 
-        print("\n Found a solution! \n")
-        print("CPU time (s):    {:.2f}".format(self.CPU_time))
-        print("Sum of costs:    {}".format(get_sum_of_cost(result)))
+        # print("\n Found a solution! \n")
+        # print("CPU time (s):    {:.2f}".format(self.CPU_time))
+        # print("Sum of costs:    {}".format(get_sum_of_cost(result)))
 
         return result

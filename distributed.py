@@ -51,38 +51,51 @@ class DistributedPlanningSolver(object):
         """
         # Initialize constants
         start_time = timer.time()
-        result = []
         self.CPU_time = timer.time() - start_time
 
         # Create agent objects with DistributedAgent class and initiate their independent paths
+        paths = []
         for i in range(self.num_of_agents):
             newAgent = DistributedAgent(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i)
-            result_i = newAgent.find_solution()
-            result.append(result_i)
             self.distributed_agents.append(newAgent)
+            paths.append(newAgent.path)
 
         time = 0
         arrived = []
+        constraints = []
 
         #while not all agents have reached their target
         while len(arrived) < len(self.distributed_agents):
-            for agent_1 in distributed_agents:
-                scope_map = define_scope(self, result, time, agent_1.id, scope_rad=2)
-                agents_in_scope = detect_agent_in_scope(self, agent_1, scope_map, time)
-                for agent_2 in agents_in_scope:
-                    result = conflict(self, agent_1, agent_2, time)
+            print(arrived)
+            for agent_1 in self.distributed_agents:
+                if agent_1 not in arrived:
+                    if time >= len(agent_1.path):
+                        agent_1.path.append(agent_1.path[-1])
 
-                if result[agent_1.id][time] == self.goals[agent_1.id]:
-                    arrived.append(agent_1)
+                    scope_map = self.define_scope(paths, time, agent_1, scope_rad=2)
+                    agents_in_scope = self.detect_agent_in_scope(agent_1, scope_map, time)
+                    for agent_2 in agents_in_scope:
+                        constraints = self.conflict(agent_1, agent_2, time, constraints)
+
+                    if agent_1.path[time] == agent_1.goal:
+                        arrived.append(agent_1)
+
+                    agent_1.start = agent_1.path[time]
+
 
             time += 1
 
+        result = []
+        for agent in self.distributed_agents:
+            result.append(agent.path)
+
+        print(result)
         return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
 
     def define_scope(self, result, timestep, agentID1, scope_rad=2):
         complete_map = [[0 if cell else 1 for cell in row] for row in self.my_map]
 
-        center_row, center_col = result[agentID1][timestep]
+        center_row, center_col = agentID1.path[timestep]
 
         # Create a copy of the complete_map
         scope_map = np.copy(complete_map)
@@ -96,60 +109,84 @@ class DistributedPlanningSolver(object):
 
         return scope_map
 
-    def conflict(self, agent_1, agent_2, time):
+    def conflict(self, agent_1, agent_2, time, constraints):
         for i in range(3):  # Communicate 3 time steps
             avoidance = False
             timestep = time + (i + 1)
 
             while avoidance == False:  # Only continue when collision is avoided
-                if agent_1.path[time] == agent_2.path[time]:  # Collision at timestep
+
+                if timestep >= len(agent_1.path):
+                    agent_1.path.append(agent_1.path[-1])
+                    curr_loc_1 = agent_1.path[-1]
+                else:
+                    curr_loc_1 = agent_1.path[timestep]
+
+                if timestep >= len(agent_2.path):
+                    agent_2.path.append(agent_2.path[-1])
+                    curr_loc_2 = agent_2.path[-1]
+                else:
+                    curr_loc_2 = agent_2.path[timestep]
+
+                if curr_loc_1 == curr_loc_2:  # Collision at timestep
+                    print("PATHS", agent_1.path, agent_2.path)
                     """ Construct alternative (temporary) paths for the colliding agents"""
                     constraint_temp = []
 
                     constraint_temp.append({'positive': False,
                                             'negative': True,
                                             'agent': agent_1.id,
-                                            'loc': agent_1.path[timestep],
-                                            'timestep': timestep
+                                            'loc': [curr_loc_1],
+                                            'timestep': timestep - time
                                             })
 
                     constraint_temp.append({'positive': False,
                                             'negative': True,
                                             'agent': agent_2.id,
-                                            'loc': agent_2.path[timestep],
-                                            'timestep': timestep
+                                            'loc': [curr_loc_2],
+                                            'timestep': timestep - time
                                             })
 
-                    path_1 = agentID_1.find_solution(constraints=constraint_temp)
+                    start_1 = agent_1.start
+                    start_2 = agent_2.start
 
-                    path_2 = agentID_2.find_solution(constraints=constraint_temp)
-
+                    agent_1.start = agent_1.path[timestep-1]
+                    path_1 = agent_1.find_solution(constraints=constraints + constraint_temp)
+                    print(path_1)
+                    agent_2.start = agent_2.path[timestep-1]
+                    path_2 = agent_2.find_solution(constraints=constraints + constraint_temp)
+                    print(path_2)
                     """ Agent with the longest detour gets to keep its original path."""
 
-                    if path_1 >= path_2:
-                        agent_2.path = [agent_2.path[:timestep], path_2[:]]
+                    agent_1.start = start_1
+                    agent_2.start = start_2
+
+                    a = np.random.normal()
+
+                    if a >= 0.5:
+
+                        agent_2.path = agent_2.path[:timestep] + path_2
 
                         """ The changed path cannot be changed back to include the collision point at the same timestep."""
-
+                        # ADD CONSTRAINT FOR SWITCHING POSITIONS
                         constraints.append({'positive': False,
                                             'negative': True,
                                             'agent': agent_2.id,
-                                            'loc': agent_1[timestep],
+                                            'loc': [curr_loc_1],
                                             'timestep': timestep
                                             })
                     else:
-                        agent_1.path = [agent_1.path[:timestep], path_1[:]]
-
+                        agent_1.path = agent_1.path[:timestep] + path_1
                         constraints.append({'positive': False,
                                             'negative': True,
                                             'agent': agent_1.id,
-                                            'loc': agent_2.path[timestep],
+                                            'loc': [curr_loc_2],
                                             'timestep': timestep
                                             })
                 else:
                     avoidance = True
 
-        return result, constraints
+        return constraints
 
 # DETECT AGENT
 # Function 2: input = map of 0s and 1s, current location all agents -> if agent detected, then output = detected agent's object
@@ -158,8 +195,12 @@ class DistributedPlanningSolver(object):
         detected_agents = []
 
         for agent in self.distributed_agents:
-            curr_loc = agent.path[time]
-            if map[curr_loc[1]][curr_loc[0]] == 1 and agent.id != checking_agent.id:
+            if time >= len(agent.path):
+                curr_loc = agent.path[-1]
+            else:
+                curr_loc = agent.path[time]
+
+            if map[curr_loc[0]][curr_loc[1]] == 1 and agent.id != checking_agent.id:
                 detected_agents.append(agent)
 
         return detected_agents
