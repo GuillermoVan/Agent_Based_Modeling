@@ -16,13 +16,13 @@ class DistributedAgent(object):
         goals       - (x1, y1) goal location
         heuristics  - heuristic to goal location
         """
-
+        constraints = []
         self.my_map = my_map
         self.start = start
         self.goal = goal
         self.id = agent_id
         self.heuristics = heuristics
-        self.path = self.find_solution()
+        self.path = self.find_solution(constraints)
 
     def find_solution(self, constraints):
         """ Finds paths for all agents from their start locations to their goal locations."""

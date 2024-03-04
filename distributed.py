@@ -129,7 +129,7 @@ class DistributedPlanningSolver(object):
                     if path_1 >= path_2:
                         agent_2.path = [agent_2.path[:timestep], path_2[:]]
 
-                    """ The changed path cannot be changed back to include the collision point at the same timestep."""
+                        """ The changed path cannot be changed back to include the collision point at the same timestep."""
 
                         constraints.append({'positive': False,
                                             'negative': True,
