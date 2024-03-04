@@ -71,7 +71,7 @@ class DistributedPlanningSolver(object):
                 scope_map = define_scope(self, result, time, agent_1.id, scope_rad=2)
                 agents_in_scope = detect_agent_in_scope(self, agent_1.id, scope_map)
                 for agent_2 in agents_in_scope:
-                    result = conflict(self, result, agent_1.id, agent_2.id, time)
+                    result = conflict(self, agent_1, agent_2, time)
 
                 if result[agent_1.id][time] == self.goals[agent_1.id]:
                     arrived.append(agent_1)
