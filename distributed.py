@@ -68,7 +68,7 @@ class DistributedPlanningSolver(object):
         while len(arrived) < len(self.distributed_agents):
             for agent_1 in distributed_agents:
                 scope_map = define_scope(self, result, time, agent_1.id, scope_rad=2)
-                agents_in_scope = detect_agent_in_scope(self, agent_1.id, scope_map)
+                agents_in_scope = detect_agent_in_scope(self, agent_1, scope_map, time)
                 for agent_2 in agents_in_scope:
                     result = conflict(self, agent_1, agent_2, time)
 
