@@ -67,14 +67,14 @@ class DistributedPlanningSolver(object):
 
         #while not all agents have reached their target
         while len(arrived) < len(self.distributed_agents):
-            for i in range(self.num_of_agents):
-                scope_map = define_scope(self, result, time, i, scope_rad=2)
-                agents_in_scope = detect_agent_in_scope(self, i, scope_map)
-                for j in agents_in_scope:
-                    result = conflict(self, result, i, j, time)
+            for agent_1 in distributed_agents:
+                scope_map = define_scope(self, result, time, agent_1.id, scope_rad=2)
+                agents_in_scope = detect_agent_in_scope(self, agent_1.id, scope_map)
+                for agent_2 in agents_in_scope:
+                    result = conflict(self, result, agent_1.id, agent_2.id, time)
 
-                if result[i][time] == self.goals[i]:
-                    arrived.append(i)
+                if result[agent_1.id][time] == self.goals[agent_1.id]:
+                    arrived.append(agent_1)
 
             time += 1
 
@@ -121,11 +121,9 @@ class DistributedPlanningSolver(object):
                                             'timestep': timestep
                                             })
 
-                    path_1 = a_star(self.my_map, self.starts[agentID_1], self.goals[agentID_1],
-                                    self.heuristics[agentID_1],
-                                    agentID_1, constraint_temp)
+                    path_1 = agentID_1.find_solution()
 
-                    path_2 = a_star(self.my_map, self.starts[agentID_2], self.goals[agentID_2],
+                    path_2 = find_solution(self.my_map, self.starts[agentID_2], self.goals[agentID_2],
                                     self.heuristics[agentID_2],
                                     agentID_2, constraint_temp)
 
