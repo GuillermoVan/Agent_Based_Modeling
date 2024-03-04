@@ -60,6 +60,65 @@ class DistributedPlanningSolver(object):
 
         return scope_map
 
+        def conflict(self, result, agentID_1, agentID_2, curr_time):
+            for i in range(3):  # Communicate 3 time steps
+                avoidance = False
+                timestep = curr_time + (i + 1)
+
+                while avoidance = False:  # Only continue when collision is avoided
+                    if result[agentID_1][timestep] == result[agentID_2][timestep]:  # Collision at timestep
+                        """ Construct alternative (temporary) paths for the colliding agents"""
+                        constraint_temp = []
+
+                        constraint_temp.append({'positive': False,
+                                                'negative': True,
+                                                'agent': agentID_1,
+                                                'loc': result[agentID_1][timestep],
+                                                'timestep': timestep
+                                                })
+
+                        constraint_temp.append({'positive': False,
+                                                'negative': True,
+                                                'agent': agentID_2,
+                                                'loc': result[agentID_1][timestep],
+                                                'timestep': timestep
+                                                })
+
+                        path_1 = a_star(self.my_map, self.starts[agentID_1], self.goals[agentID_1],
+                                        self.heuristics[agentID_1],
+                                        agentID_1, constraint_temp)
+
+                        path_2 = a_star(self.my_map, self.starts[agentID_2], self.goals[agentID_2],
+                                        self.heuristics[agentID_2],
+                                        agentID_2, constraint_temp)
+
+                        """ Agent with the longest detour gets to keep its original path."""
+
+                        if path_1 >= path_2:
+                            result[agentID_2] = path_2
+
+                        """ The changed path cannot be changed back to include the collision point at the same timestep."""
+
+                        constraints.append({'positive': False,
+                                            'negative': True,
+                                            'agent': agentID_2,
+                                            'loc': result[agentID_1][timestep],
+                                            'timestep': timestep
+                                            })
+                    else:
+                        result[agentID_1] = path_1
+
+                        constraints.append({'positive': False,
+                                            'negative': True,
+                                            'agent': agentID_1,
+                                            'loc': result[agentID_1][timestep],
+                                            'timestep': timestep
+                                            })
+                else:
+                    avoidance = True
+
+        return result, constraints
+
         # for dr, dc in neighbors:
         #     for row in complete_map:
         #         for column in complete_map[row]:
