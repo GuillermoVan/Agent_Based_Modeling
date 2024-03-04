@@ -52,7 +52,6 @@ class DistributedPlanningSolver(object):
         # Initialize constants
         start_time = timer.time()
         result = []
-        self.CPU_time = timer.time() - start_time
 
         # Create agent objects with DistributedAgent class and initiate their independent paths
         for i in range(self.num_of_agents):
@@ -77,6 +76,11 @@ class DistributedPlanningSolver(object):
 
             time += 1
 
+        self.CPU_time = timer.time() - start_time
+
+        print("\n Found a solution! \n")
+        print("CPU time (s):    {:.2f}".format(self.CPU_time))
+        print("Sum of costs:    {}".format(get_sum_of_cost(result)))
         return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
 
     def define_scope(self, result, timestep, agentID1, scope_rad=2):
@@ -120,9 +124,9 @@ class DistributedPlanningSolver(object):
                                             'timestep': timestep
                                             })
 
-                    path_1 = agentID_1.find_solution(constraints=constraint_temp)
+                    path_1 = agent_1.find_solution(constraints=constraint_temp)
 
-                    path_2 = agentID_2.find_solution(constraints=constraint_temp)
+                    path_2 = agent_2.find_solution(constraints=constraint_temp)
 
                     """ Agent with the longest detour gets to keep its original path."""
 
