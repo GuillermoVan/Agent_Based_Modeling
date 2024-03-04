@@ -57,7 +57,6 @@ class DistributedPlanningSolver(object):
         # Create agent objects with DistributedAgent class and initiate their independent paths
         for i in range(self.num_of_agents):
             newAgent = DistributedAgent(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i)
-
             result_i = newAgent.find_solution()
             result.append(result_i)
             self.distributed_agents.append(newAgent)
@@ -152,29 +151,14 @@ class DistributedPlanningSolver(object):
 
         return result, constraints
 
-        # for dr, dc in neighbors:
-        #     for row in complete_map:
-        #         for column in complete_map[row]:
-        #             new_row, new_col = row + dr, column + dc
-        #             if 0 <= new_row < len(complete_map) and 0 <= new_col<=len(complete_map[row]):
-        #                 if complete_map[row][column] == :
-        #
-        #                     complete_map[new_row][new_col] =
-
-        # for all_agents in range(self.num_of_agents):
-        #     if agentID1 != all_agents:
-        #         if result[agentID1][timestep] == result[all_agents][timestep]:
-        #             complete_map
-        #
-
 # DETECT AGENT
 # Function 2: input = map of 0s and 1s, current location all agents -> if agent detected, then output = detected agent's object
 
-    def detect_agent_in_scope(self, checking_agent, map):
+    def detect_agent_in_scope(self, checking_agent, map, time):
         detected_agents = []
 
         for agent in self.distributed_agents:
-            curr_loc = agent.start
+            curr_loc = agent.path[time]
             if map[curr_loc[1]][curr_loc[0]] == 1 and agent.id != checking_agent.id:
                 detected_agents.append(agent)
 
