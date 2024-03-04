@@ -23,7 +23,7 @@ class DistributedAgent(object):
         self.id = agent_id
         self.heuristics = heuristics
 
-    def find_solution(self):
+    def find_solution(self, constraints):
         """ Finds paths for all agents from their start locations to their goal locations."""
 
         start_time = timer.time()
@@ -31,8 +31,7 @@ class DistributedAgent(object):
         ##############################
         # Task 0: Understand the following code (see the lab description for some hints)
 
-
-        result = a_star(self.my_map, self.start, self.goal, self.heuristics, self.id, [])
+        result = a_star(self.my_map, self.start, self.goal, self.heuristics, self.id, constraints)
 
         if result is None:
             raise BaseException('No solutions')

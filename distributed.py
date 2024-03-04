@@ -97,60 +97,58 @@ class DistributedPlanningSolver(object):
 
         return scope_map
 
-    def conflict(self, result, agentID_1, agentID_2, curr_time):
+    def conflict(self, agent_1, agent_2, time):
         for i in range(3):  # Communicate 3 time steps
             avoidance = False
-            timestep = curr_time + (i + 1)
+            timestep = time + (i + 1)
 
-            while avoidance = False:  # Only continue when collision is avoided
-                if result[agentID_1][timestep] == result[agentID_2][timestep]:  # Collision at timestep
+            while avoidance == False:  # Only continue when collision is avoided
+                if agent_1.path[time] == agent_2.path[time]:  # Collision at timestep
                     """ Construct alternative (temporary) paths for the colliding agents"""
                     constraint_temp = []
 
                     constraint_temp.append({'positive': False,
                                             'negative': True,
-                                            'agent': agentID_1,
-                                            'loc': result[agentID_1][timestep],
+                                            'agent': agent_1.id,
+                                            'loc': agent_1.path[timestep],
                                             'timestep': timestep
                                             })
 
                     constraint_temp.append({'positive': False,
                                             'negative': True,
-                                            'agent': agentID_2,
-                                            'loc': result[agentID_1][timestep],
+                                            'agent': agent_2.id,
+                                            'loc': agent_2.path[timestep],
                                             'timestep': timestep
                                             })
 
-                    path_1 = agentID_1.find_solution()
+                    path_1 = agentID_1.find_solution(constraints=constraint_temp)
 
-                    path_2 = find_solution(self.my_map, self.starts[agentID_2], self.goals[agentID_2],
-                                    self.heuristics[agentID_2],
-                                    agentID_2, constraint_temp)
+                    path_2 = agentID_2.find_solution(constraints=constraint_temp)
 
                     """ Agent with the longest detour gets to keep its original path."""
 
                     if path_1 >= path_2:
-                        result[agentID_2] = path_2
+                        agent_2.path = [agent_2.path[:timestep], path_2[:]]
 
                     """ The changed path cannot be changed back to include the collision point at the same timestep."""
 
-                    constraints.append({'positive': False,
-                                        'negative': True,
-                                        'agent': agentID_2,
-                                        'loc': result[agentID_1][timestep],
-                                        'timestep': timestep
-                                        })
-                else:
-                    result[agentID_1] = path_1
+                        constraints.append({'positive': False,
+                                            'negative': True,
+                                            'agent': agent_2.id,
+                                            'loc': agent_1[timestep],
+                                            'timestep': timestep
+                                            })
+                    else:
+                        agent_1.path = [agent_1.path[:timestep], path_1[:]]
 
-                    constraints.append({'positive': False,
-                                        'negative': True,
-                                        'agent': agentID_1,
-                                        'loc': result[agentID_1][timestep],
-                                        'timestep': timestep
-                                        })
-            else:
-                avoidance = True
+                        constraints.append({'positive': False,
+                                            'negative': True,
+                                            'agent': agent_1.id,
+                                            'loc': agent_2.path[timestep],
+                                            'timestep': timestep
+                                            })
+                else:
+                    avoidance = True
 
         return result, constraints
 
