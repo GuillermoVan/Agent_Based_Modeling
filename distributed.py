@@ -178,16 +178,12 @@ class DistributedPlanningSolver(object):
 # DETECT AGENT
 # Function 2: input = map of 0s and 1s, current location all agents -> if agent detected, then output = detected agent's object
 
-    def detect_agent_in_scope(self, map, time):
-
-        result = self.find_solution()
+    def detect_agent_in_scope(self, checking_agent, map):
         detected_agents = []
 
-        for y in map:
-            for x in map:
-                self.distributed_agents
-                if map[y][x] == 1 and :
+        for agent in self.distributed_agents:
+            curr_loc = agent.start
+            if map[curr_loc[1]][curr_loc[0]] == 1 and agent.id != checking_agent.id:
+                detected_agents.append(agent)
 
-
-                    detected_agents.append(agent_index)
-
+        return detected_agents
