@@ -1,7 +1,6 @@
 import time as timer
 from single_agent_planner import compute_heuristics, a_star, get_sum_of_cost
 
-
 class PrioritizedPlanningSolver(object):
     """A planner that plans for each robot sequentially."""
 
@@ -30,6 +29,23 @@ class PrioritizedPlanningSolver(object):
         result = []
         constraints = []
 
+        # VERTEX CONSTRAINT EXAMPLE
+        '''
+        constraints.append({'positive': False,
+                            'negative': True,
+                            'agent': 0,
+                            'loc': [(1, 5)],
+                            'timestep': 4})
+        '''
+        # EDGE CONSTRAINT EXAMPLE
+        '''
+        constraints.append({'positive': False,
+                            'negative': True,
+                            'agent': 1,
+                            'loc': [(1, 2), (1, 3)],
+                            'timestep': 1})
+        '''
+
         for i in range(self.num_of_agents):  # Find path for each agent
             path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i],
                           i, constraints)
@@ -43,7 +59,6 @@ class PrioritizedPlanningSolver(object):
             #            * path contains the solution path of the current (i'th) agent, e.g., [(1,1),(1,2),(1,3)]
             #            * self.num_of_agents has the number of total agents
             #            * constraints: array of constraints to consider for future A* searches
-
 
             ##############################
 

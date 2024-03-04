@@ -14,13 +14,13 @@ from cbs import detect_collision, detect_collisions
 #Function 1: input = map, current location -> output = map of 0s and 1s
 
 #DETECT AGENT
-#Function 2: input = map of 0s and 1s, current location all agents -> if agent detected, then output = detected agent's object
+#Function 2: input = map of 0s and 1s, current location of all agents -> if agent detected, then output = detected agent's object
 
 #DETECT CONFLICT + COMMUNICATION
 #Function 3: input = agent object -> output = True/False conflict detection
 #if conflict detected, shortest path without passing conflict point, slowest path 'wins' -> output = path update for agent who 'lost'
 
-#LATER ON WE WILL UITBREIDEN TO MULTIPLE AGENTS IN SAME SCOPE AND SEE HOW THAT WORKS
+#LATER ON WE WILL EXPAND TO MULTIPLE AGENTS IN SAME SCOPE AND SEE HOW THAT WORKS
 
 
 class DistributedPlanningSolver(object):
@@ -37,7 +37,48 @@ class DistributedPlanningSolver(object):
         self.goals = goals
         self.num_of_agents = len(goals)
         self.heuristics = []
-        # T.B.D.
+        self.distributed_agents = []
+
+        for goal in self.goals:
+            self.heuristics.append(compute_heuristics(my_map, goal))
+
+    def find_solution(self):
+        """
+        Finds paths for all agents from start to goal locations.
+
+        Returns:
+            result (list): with a path [(s,t), .....] for each agent.
+        """
+        # Initialize constants
+        start_time = timer.time()
+        result = []
+        self.CPU_time = timer.time() - start_time
+
+        # Create agent objects with DistributedAgent class and initiate their independent paths
+        for i in range(self.num_of_agents):
+            newAgent = DistributedAgent(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i)
+
+            result_i = newAgent.find_solution()
+            result.append(result_i)
+            self.distributed_agents.append(newAgent)
+
+        time = 0
+        arrived = []
+        #while not all agents have reached their target
+        #while len(arrived) < len(self.distributed_agents):
+            #for agent in distributed_agent
+            #for agent in self.distributed_agents:
+                # make current scope map for this agent
+                # detected_agents = []
+                # detect agents in current scope map and append to list
+                # for detected_agent in detected_agents
+                    # if detected agent's path intersects with own path:
+                        # evaluate new route (without conflict) current agent
+                        # evaluate new route (without conflict) detected agent
+                         # update route of agent with fasted evaluated route
+        time += 1
+
+    return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
 
     def define_scope(self, result, timestep, agentID1, scope_rad=2):
         complete_map = np.zeros_like(self.my_map)
@@ -134,30 +175,19 @@ class DistributedPlanningSolver(object):
         #             complete_map
         #
 
+# DETECT AGENT
+# Function 2: input = map of 0s and 1s, current location all agents -> if agent detected, then output = detected agent's object
 
-    def find_solution(self):
-        """
-        Finds paths for all agents from start to goal locations. 
-        
-        Returns:
-            result (list): with a path [(s,t), .....] for each agent.
-        """
-        # Initialize constants       
-        start_time = timer.time()
-        result = []
-        self.CPU_time = timer.time() - start_time
-        
-        
-        # Create agent objects with DistributedAgent class
-        for i in range(self.num_of_agents):
-            newAgent = DistributedAgent(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i)
+    def detect_agent_in_scope(self, map, time):
 
-        
-        
-        # Print final output
-        print("\n Found a solution! \n")
-        print("CPU time (s):    {:.2f}".format(self.CPU_time))
-        print("Sum of costs:    {}".format(get_sum_of_cost(result)))  # Hint: think about how cost is defined in your implementation
-        print(result)
-        
-        return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
+        result = self.find_solution()
+        detected_agents = []
+
+        for y in map:
+            for x in map:
+                self.distributed_agents
+                if map[y][x] == 1 and :
+
+
+                    detected_agents.append(agent_index)
+
