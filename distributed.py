@@ -81,23 +81,19 @@ class DistributedPlanningSolver(object):
     return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
 
     def define_scope(self, result, timestep, agentID1, scope_rad=2):
-        complete_map = np.zeros_like(self.my_map)
-        for row in self.my_map:
-            for cell in self.my_map[row]:
-                if not cell:
-                    complete_map[row][cell] = 1
+        complete_map = [[0 if cell else 1 for cell in row] for row in self.my_map]
 
-        neighbors = [(i, j) for i in range(-scope_rad, scope_rad + 1) for j in range(-scope_rad, scope_rad + 1)]
+        center_row, center_col = result[agentID1][timestep]
 
-        (center_row, center_col) = result[agentID1][timestep]
+        # Create a copy of the complete_map
         scope_map = np.copy(complete_map)
+
+        # Iterate over the cells and set values based on the scope_rad
         for i in range(len(complete_map)):
             for j in range(len(complete_map[i])):
                 distance = abs(center_row - i) + abs(center_col - j)  # Manhattan distance
                 if distance > scope_rad:
                     scope_map[i][j] = 0
-                # if any(abs(row - i) > scope_rad or abs(col - j) > scope_rad for row, col in neighbors):
-                #     scope_map[i][j] = 0
 
         return scope_map
 
