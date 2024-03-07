@@ -177,3 +177,5 @@ cython_debug/
 *.ilp
 *.cfg
 results.csv
+.idea/misc.xml
+.idea/Agent-based Modelling.iml
