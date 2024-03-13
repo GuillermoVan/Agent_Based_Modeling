@@ -10,18 +10,6 @@ from distributed_agent_class import DistributedAgent
 import numpy as np
 from cbs import detect_collision, detect_collisions
 
-#SOPE DEFINITION
-#Function 1: input = map, current location -> output = map of 0s and 1s
-
-#DETECT AGENT
-#Function 2: input = map of 0s and 1s, current location of all agents -> if agent detected, then output = detected agent's object
-
-#DETECT CONFLICT + COMMUNICATION
-#Function 3: input = agent object -> output = True/False conflict detection
-#if conflict detected, shortest path without passing conflict point, slowest path 'wins' -> output = path update for agent who 'lost'
-
-#LATER ON WE WILL EXPAND TO MULTIPLE AGENTS IN SAME SCOPE AND SEE HOW THAT WORKS
-
 
 class DistributedPlanningSolver(object):
     """A distributed planner"""
@@ -38,9 +26,10 @@ class DistributedPlanningSolver(object):
         self.num_of_agents = len(goals)
         self.heuristics = []
         self.distributed_agents = []
-        self.initial_paths = []
+        self.initial_paths = dict()
         self.performance_agents = dict()
         self.performance_system = dict()
+        self.conflict_agents = dict()
 
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
@@ -62,7 +51,8 @@ class DistributedPlanningSolver(object):
             newAgent = DistributedAgent(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i)
             self.distributed_agents.append(newAgent)
             paths.append(newAgent.path)
-            self.initial_paths = paths
+            self.initial_paths[newAgent.id] = newAgent.path.copy()
+            self.conflict_agents[newAgent.id] = 0
 
 
         time = 0
@@ -71,6 +61,7 @@ class DistributedPlanningSolver(object):
 
         #while not all agents have reached their target
         while len(arrived) < len(self.distributed_agents) + 1:
+            print(time)
             change = True
             while change == True:
                 change_check = []
@@ -83,8 +74,12 @@ class DistributedPlanningSolver(object):
                     scope_map = self.define_scope(paths, time, agent_1, scope_rad=2)
                     agents_in_scope = self.detect_agent_in_scope(agent_1, scope_map, time)
                     for agent_2 in agents_in_scope:
-                        # print(agent_1.id, agent_2.id, constraints)
+                        old_length_constraints = len(constraints)
                         constraints, change_curr = self.conflict(agent_1, agent_2, time, constraints)
+                        if len(constraints) != old_length_constraints: #this part is needed for the conflict performance indicators
+                            print("CONFLICT DETECTED BETWEEN AGENT", agent_1.id, "and", agent_2.id)
+                            self.conflict_agents[agent_1.id] += 1
+                            self.conflict_agents[agent_2.id] += 1
                         change_check.append(change_curr)
 
                     if agent_1.path[time] == agent_1.goal and agent_1 not in arrived:
@@ -98,7 +93,6 @@ class DistributedPlanningSolver(object):
                 else:
                     change = False
                     time += 1
-                print(change, time, len(arrived), self.num_of_agents)
 
             if len(arrived) >= len(self.distributed_agents):
                 arrived.append('Final check')
@@ -106,8 +100,6 @@ class DistributedPlanningSolver(object):
         result = []
         for agent in self.distributed_agents:
             result.append(agent.path)
-
-        print(result)
 
         #GET PERFORMANCE DATA AND VISUALIZE
         self.performance(result)
@@ -133,9 +125,6 @@ class DistributedPlanningSolver(object):
         return scope_map
 
     def conflict(self, agent_1, agent_2, time, constraints):
-        # print('CONFLICT CHECK', agent_1.id, agent_2.id, time)
-        # print('AGENT 1', agent_1.id, agent_1.path)
-        # print('AGENT 2', agent_2.id, agent_2.path)
         change = False
 
         for i in range(1,4): # Communicate 3 time steps ahead
@@ -202,12 +191,8 @@ class DistributedPlanningSolver(object):
 
                 else:   # No collision occurs at timestep
                     avoidance = True
-            # print(constraints)
+
         return constraints, change
-
-
-# DETECT AGENT
-# Function 2: input = map of 0s and 1s, current location all agents -> if agent detected, then output = detected agent's object
 
     def detect_agent_in_scope(self, checking_agent, map, time):
         detected_agents = []
@@ -225,18 +210,57 @@ class DistributedPlanningSolver(object):
 
     def performance(self, result):
         #AGENT-SPECIFIC INDICATORS
+        distances = dict()
+        travel_times = dict()
+
         for agent in self.distributed_agents:
             performance_per_agent = dict()
-            performance_per_agent['optimal path / traveled distance'] = len(set(self.initial_paths[agent.id])) / len(set(result[agent.id]))
-            performance_per_agent['optimal time / travel time'] = len(self.initial_paths[agent.id]) / len(result[agent.id])
-            #NEED REST OF CODE TO WORK TO IMPLEMENT THIS LINE BELOW -> conflicts_per_agent needs to be defined
-            #performance_per_agent['#conflicts / travel time'] =  conflicts_per_agent / len(result[agent.id])
+
+            #Determine the agent's path without duplicates in the end and also one without waiting time included
+            agent_path = result[agent.id]
+            if agent_path[-1] == result[agent.id][-2]:
+                for i in range(len(agent_path)-1, 0, -1):
+                    if agent_path[i] != agent_path[i - 1]:
+                        break
+                agent_path = agent_path[:i+1]
+            travel_times[agent.id] = len(agent_path) - 1 #fill in travel_times dictionary needed for system wide performance indicators
+
+            pops = []
+            for i in range(len(agent_path)-1):
+                if agent_path[i] == agent_path[i+1]:
+                    pops.append(i)
+            agent_path_no_waiting = [location for idx, location in enumerate(agent_path) if idx not in pops]
+            distances[agent.id] = len(agent_path_no_waiting) - 1 #fill in distances dictionary needed for system wide performance indicators
+
+            #Fill in the performance indicator dictionary per agent
+            performance_per_agent['shortest distance / travel distance'] = (len(set(self.initial_paths[agent.id])) - 1) / (len(agent_path_no_waiting) - 1)
+            performance_per_agent['shortest time / travel time'] = (len(self.initial_paths[agent.id]) - 1) / travel_times[agent.id]
+            if agent.id == 0:
+                print("optimal", self.initial_paths[agent.id])
+                print("actual", agent_path)
+            performance_per_agent['#conflicts / travel time'] =  self.conflict_agents[agent.id] / travel_times[agent.id]
             self.performance_agents[agent.id] = performance_per_agent
 
         #SYSTEM-WIDE INDICATORS
-        self.performance_system['total simulation time'] =
+        self.performance_system['maximum time'] = max([value for key, value in travel_times.items()]) #this is the time in which all agents have reached their destination
+        self.performance_system['total time'] = 0 #this is the sum of all times of agents
+        for agent, time in travel_times.items():
+            self.performance_system['total time'] += time
+        self.performance_system['total distance traveled'] = 0
+        for agent, distance in distances.items():
+            self.performance_system['total distance traveled'] += distance
+        self.performance_system['total amount of conflicts'] = sum([value for key, value in self.conflict_agents.items()]) / 2 #divide by 2, because 1 conflict is for 2 agents
+        self.performance_system['average travel time'] = sum([value for key, value in travel_times.items()]) / len(result)
+        self.performance_system['average travel distance'] = self.performance_system['total distance traveled'] / len(result)
+        self.performance_system['average conflicts'] = self.performance_system['total amount of conflicts'] * 2 / len(result) #times two because it is average amount of conflicts per agent
 
-        return performance_agents, performance_system
+        print(self.conflict_agents)
+        print(self.performance_agents)
+        print(self.performance_system)
 
     def visualize_performance(self, performance_agents, performance_system):
+        # Heat map
+        # Graphs
+        return None
+
 
