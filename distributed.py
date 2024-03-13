@@ -70,25 +70,38 @@ class DistributedPlanningSolver(object):
         constraints = []
 
         #while not all agents have reached their target
-        while len(arrived) < len(self.distributed_agents):
-            print(arrived)
-            for agent_1 in self.distributed_agents:
-                if agent_1 not in arrived:
+        while len(arrived) < len(self.distributed_agents) + 1:
+            change = True
+            while change == True:
+                change_check = []
+
+                for agent_1 in self.distributed_agents:
+                    # if agent_1 not in arrived:
                     if time >= len(agent_1.path):
                         agent_1.path.append(agent_1.path[-1])
 
                     scope_map = self.define_scope(paths, time, agent_1, scope_rad=2)
                     agents_in_scope = self.detect_agent_in_scope(agent_1, scope_map, time)
                     for agent_2 in agents_in_scope:
-                        constraints = self.conflict(agent_1, agent_2, time, constraints)
+                        # print(agent_1.id, agent_2.id, constraints)
+                        constraints, change_curr = self.conflict(agent_1, agent_2, time, constraints)
+                        change_check.append(change_curr)
 
-                    if agent_1.path[time] == agent_1.goal:
+                    if agent_1.path[time] == agent_1.goal and agent_1 not in arrived:
                         arrived.append(agent_1)
 
                     agent_1.start = agent_1.path[time]
 
+                if True in change_check:
+                    change = True
+                    time = 0
+                else:
+                    change = False
+                    time += 1
+                print(change, time, len(arrived), self.num_of_agents)
 
-            time += 1
+            if len(arrived) >= len(self.distributed_agents):
+                arrived.append('Final check')
 
         result = []
         for agent in self.distributed_agents:
@@ -120,24 +133,33 @@ class DistributedPlanningSolver(object):
         return scope_map
 
     def conflict(self, agent_1, agent_2, time, constraints):
+        # print('CONFLICT CHECK', agent_1.id, agent_2.id, time)
+        # print('AGENT 1', agent_1.id, agent_1.path)
+        # print('AGENT 2', agent_2.id, agent_2.path)
+        change = False
+
         for i in range(1,4): # Communicate 3 time steps ahead
             avoidance = False   # Check for avoidance for all 3 time steps
             timestep = time + i  # Timestep which is checked
 
             while avoidance == False:   # Only continue when collision is avoided
                 """ Let agent stay at its final location after path is finished."""
-                while timestep + 1 >= len(agent_1.path):
+                while timestep + 2 >= len(agent_1.path):
                     agent_1.path.append(agent_1.path[-1])
 
-                while timestep + 1 >= len(agent_2.path):
+                while timestep + 2 >= len(agent_2.path):
                     agent_2.path.append(agent_2.path[-1])
 
                 """ Check if collision occurs."""
-                if agent_1.path[timestep] == agent_2.path[timestep]:
-                    print(timestep)
+                if agent_1.path[timestep] == agent_2.path[timestep] or (agent_1.path[timestep] == agent_2.path[timestep-1] and agent_1.path[timestep-1] == agent_2.path[timestep]):
+
                     """ Create alternative paths."""
                     constraint_temp_1 = []
                     constraint_temp_2 = []
+
+                    for k in range(len(constraints)):
+                        constraint_temp_1.append(constraints[k])
+                        constraint_temp_2.append(constraints[k])
 
                     for j in range(timestep - time + 2):   # Temporary constraints for the other agent's path
 
@@ -156,13 +178,13 @@ class DistributedPlanningSolver(object):
                         constraint_temp_1.append({'positive': False,
                                                 'negative': True,
                                                 'agent': agent_1.id,
-                                                'loc': [agent_2.path[j+time], agent_2.path[j-1+time]],
+                                                'loc': [agent_2.path[timestep], agent_2.path[timestep-1]],
                                                 'timestep': j})
 
                         constraint_temp_2.append({'positive': False,
                                                 'negative': True,
                                                 'agent': agent_2.id,
-                                                'loc': [agent_1.path[j+time], agent_1.path[j-1+time]],
+                                                'loc': [agent_1.path[timestep], agent_1.path[timestep-1]],
                                                 'timestep': j})
 
                     path_1 = agent_1.find_solution(constraints=constraint_temp_1)
@@ -170,16 +192,22 @@ class DistributedPlanningSolver(object):
 
                     if len(path_1) >= len(path_2): # Agent with longest detour receives priority
                         agent_2.path = agent_2.path[:time] + path_2
-                        constraints.append(constraint_temp_2)
+                        constraints = constraint_temp_2
+                        change = True
+
                     else:
                         agent_1.path = agent_1.path[:time] + path_1
-                        constraints.append(constraint_temp_1)
-
+                        constraints = constraint_temp_1
+                        change = True
 
                 else:   # No collision occurs at timestep
                     avoidance = True
+            # print(constraints)
+        return constraints, change
 
-        return constraints
+
+# DETECT AGENT
+# Function 2: input = map of 0s and 1s, current location all agents -> if agent detected, then output = detected agent's object
 
     def detect_agent_in_scope(self, checking_agent, map, time):
         detected_agents = []
