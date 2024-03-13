@@ -38,6 +38,9 @@ class DistributedPlanningSolver(object):
         self.num_of_agents = len(goals)
         self.heuristics = []
         self.distributed_agents = []
+        self.initial_paths = []
+        self.performance_agents = dict()
+        self.performance_system = dict()
 
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
@@ -59,6 +62,8 @@ class DistributedPlanningSolver(object):
             newAgent = DistributedAgent(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i)
             self.distributed_agents.append(newAgent)
             paths.append(newAgent.path)
+            self.initial_paths = paths
+
 
         time = 0
         arrived = []
@@ -90,6 +95,11 @@ class DistributedPlanningSolver(object):
             result.append(agent.path)
 
         print(result)
+
+        #GET PERFORMANCE DATA AND VISUALIZE
+        self.performance(result)
+        self.visualize_performance(self.performance_agents, self.performance_system)
+
         return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
 
     def define_scope(self, result, timestep, agentID1, scope_rad=2):
@@ -170,116 +180,6 @@ class DistributedPlanningSolver(object):
                     avoidance = True
 
         return constraints
-    # def conflict(self, agent_1, agent_2, time, constraints):
-    #     for i in range(3):  # Communicate 3 time steps
-    #         avoidance = False
-    #         timestep = time + (i + 1)
-    #
-    #         while avoidance == False:  # Only continue when collision is avoided
-    #
-    #             if timestep >= len(agent_1.path):
-    #                 agent_1.path.append(agent_1.path[-1])
-    #                 curr_loc_1 = agent_1.path[-1]
-    #             else:
-    #                 curr_loc_1 = agent_1.path[timestep]
-    #
-    #             if timestep >= len(agent_2.path):
-    #                 agent_2.path.append(agent_2.path[-1])
-    #                 curr_loc_2 = agent_2.path[-1]
-    #             else:
-    #                 curr_loc_2 = agent_2.path[timestep]
-    #
-    #             if curr_loc_1 == curr_loc_2:  # Collision at timestep
-    #                 print("PATHS", agent_1.path, agent_2.path)
-    #                 """ Construct alternative (temporary) paths for the colliding agents"""
-    #                 constraint_temp_1 = []
-    #                 constraint_temp_2 = []
-    #                 time_temp = 0
-    #                 for loc in agent_1.path:
-    #                     constraint_temp_2.append({'positive': False,
-    #                                               'negative': True,
-    #                                               'agent': agent_2.id,
-    #                                               'loc': loc,
-    #                                               'timestep': time_temp})
-    #                     time_temp += 1
-    #
-    #                 time_temp = 0
-    #                 for loc in agent_2.path:
-    #                     constraint_temp_1.append({'positive': False,
-    #                                               'negative': True,
-    #                                               'agent': agent_1.id,
-    #                                               'loc': loc,
-    #                                               'timestep': time_temp})
-    #                     time_temp += 1
-    #
-    #                 # constraint_temp.append({'positive': False,
-    #                 #                         'negative': True,
-    #                 #                         'agent': agent_1.id,
-    #                 #                         'loc': [curr_loc_1],
-    #                 #                         'timestep': timestep - time
-    #                 #                         })
-    #                 start_1 = agent_1.start
-    #                 start_2 = agent_2.start
-    #
-    #                 path_1 = agent_1.find_solution(constraints=constraints + constraint_temp_1)
-    #                 path_2 = agent_2.find_solution(constraints=constraints + constraint_temp_2)
-    #
-    #                 # constraint_temp.append({'positive': False,
-    #                 #                         'negative': True,
-    #                 #                         'agent': agent_2.id,
-    #                 #                         'loc': [curr_loc_2],
-    #                 #                         'timestep': timestep - time
-    #                 #                         })
-    #                 #
-    #
-    #                 #
-    #                 # agent_1.start = agent_1.path[timestep-1]
-    #                 # path_1 = agent_1.find_solution(constraints=constraints + constraint_temp)
-    #
-    #                 # for place in range(len(path_1)-1):
-    #                 #     constraint_temp.append({'positive': False,
-    #                 #                             'negative': True,
-    #                 #                             'agent': agent_2,
-    #                 #                             'loc':[path_1[place], path_1[place+1]],
-    #                 #                             'timestep': place})
-    #                 print(path_1)
-    #                 # agent_2.start = agent_2.path[timestep-1]
-    #                 # path_2 = agent_2.find_solution(constraints=constraints + constraint_temp)
-    #                 print(path_2)
-    #                 """ Agent with the longest detour gets to keep its original path."""
-    #                 #
-    #                 agent_1.start = start_1
-    #                 agent_2.start = start_2
-    #
-    #                 a = np.random.normal()
-    #
-    #                 if a >= 0.5:
-    #
-    #                     agent_2.path = agent_2.path[:timestep] + path_2
-    #
-    #                     """ The changed path cannot be changed back to include the collision point at the same timestep."""
-    #                     # ADD CONSTRAINT FOR SWITCHING POSITIONS
-    #                     constraints.append({'positive': False,
-    #                                         'negative': True,
-    #                                         'agent': agent_2.id,
-    #                                         'loc': [curr_loc_1],
-    #                                         'timestep': timestep
-    #                                         })
-    #                 else:
-    #                     agent_1.path = agent_1.path[:timestep] + path_1
-    #                     constraints.append({'positive': False,
-    #                                         'negative': True,
-    #                                         'agent': agent_1.id,
-    #                                         'loc': [curr_loc_2],
-    #                                         'timestep': timestep
-    #                                         })
-    #             else:
-    #                 avoidance = True
-    #
-    #     return constraints
-
-# DETECT AGENT
-# Function 2: input = map of 0s and 1s, current location all agents -> if agent detected, then output = detected agent's object
 
     def detect_agent_in_scope(self, checking_agent, map, time):
         detected_agents = []
@@ -294,3 +194,21 @@ class DistributedPlanningSolver(object):
                 detected_agents.append(agent)
 
         return detected_agents
+
+    def performance(self, result):
+        #AGENT-SPECIFIC INDICATORS
+        for agent in self.distributed_agents:
+            performance_per_agent = dict()
+            performance_per_agent['optimal path / traveled distance'] = len(set(self.initial_paths[agent.id])) / len(set(result[agent.id]))
+            performance_per_agent['optimal time / travel time'] = len(self.initial_paths[agent.id]) / len(result[agent.id])
+            #NEED REST OF CODE TO WORK TO IMPLEMENT THIS LINE BELOW -> conflicts_per_agent needs to be defined
+            #performance_per_agent['#conflicts / travel time'] =  conflicts_per_agent / len(result[agent.id])
+            self.performance_agents[agent.id] = performance_per_agent
+
+        #SYSTEM-WIDE INDICATORS
+        self.performance_system['total simulation time'] =
+
+        return performance_agents, performance_system
+
+    def visualize_performance(self, performance_agents, performance_system):
+
