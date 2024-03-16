@@ -8,19 +8,8 @@ import time as timer
 from single_agent_planner import compute_heuristics, a_star, get_sum_of_cost
 from distributed_agent_class import DistributedAgent
 import numpy as np
+import copy
 from cbs import detect_collision, detect_collisions
-
-#SOPE DEFINITION
-#Function 1: input = map, current location -> output = map of 0s and 1s
-
-#DETECT AGENT
-#Function 2: input = map of 0s and 1s, current location of all agents -> if agent detected, then output = detected agent's object
-
-#DETECT CONFLICT + COMMUNICATION
-#Function 3: input = agent object -> output = True/False conflict detection
-#if conflict detected, shortest path without passing conflict point, slowest path 'wins' -> output = path update for agent who 'lost'
-
-#LATER ON WE WILL EXPAND TO MULTIPLE AGENTS IN SAME SCOPE AND SEE HOW THAT WORKS
 
 
 class DistributedPlanningSolver(object):
@@ -38,6 +27,10 @@ class DistributedPlanningSolver(object):
         self.num_of_agents = len(goals)
         self.heuristics = []
         self.distributed_agents = []
+        self.initial_paths = dict()
+        self.performance_agents = dict()
+        self.performance_system = dict()
+        self.conflict_agents = dict()
 
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
@@ -59,37 +52,67 @@ class DistributedPlanningSolver(object):
             newAgent = DistributedAgent(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i)
             self.distributed_agents.append(newAgent)
             paths.append(newAgent.path)
+            self.initial_paths[newAgent.id] = newAgent.path.copy()
+            self.conflict_agents[newAgent.id] = 0
+
 
         time = 0
         arrived = []
         constraints = []
+        priority_lst = []
 
         #while not all agents have reached their target
-        while len(arrived) < len(self.distributed_agents):
-            print(arrived)
-            for agent_1 in self.distributed_agents:
-                if agent_1 not in arrived:
+        while len(arrived) < len(self.distributed_agents) + 1:
+            print(time)
+            change = True
+            while change == True:
+                change_check = []
+
+                for agent_1 in self.distributed_agents:
+                    # if agent_1 not in arrived:
                     if time >= len(agent_1.path):
                         agent_1.path.append(agent_1.path[-1])
+                    agent_1.start = agent_1.path[time]
 
                     scope_map = self.define_scope(paths, time, agent_1, scope_rad=2)
                     agents_in_scope = self.detect_agent_in_scope(agent_1, scope_map, time)
                     for agent_2 in agents_in_scope:
-                        constraints = self.conflict(agent_1, agent_2, time, constraints)
+                        old_length_constraints = len(constraints)
+                        constraints, change_curr, priority_time = self.conflict(agent_1, agent_2, time, constraints, priority_lst)
+                        if len(priority_time) != 0:
+                            priority_lst.append(priority_time)
+                        print(priority_lst)
+                        print(constraints)
+                        if len(constraints) != old_length_constraints: #this part is needed for the conflict performance indicators
+                            # print("CONFLICT DETECTED BETWEEN AGENT", agent_1.id, "and", agent_2.id)
+                            self.conflict_agents[agent_1.id] += 1
+                            self.conflict_agents[agent_2.id] += 1
 
-                    if agent_1.path[time] == agent_1.goal:
+
+                        change_check.append(change_curr)
+
+                    if agent_1.path[time] == agent_1.goal and agent_1 not in arrived:
                         arrived.append(agent_1)
 
-                    agent_1.start = agent_1.path[time]
 
+                if True in change_check:
+                    change = True
+                    time = 0
+                else:
+                    change = False
+                    time += 1
 
-            time += 1
+            if len(arrived) >= len(self.distributed_agents):
+                arrived.append('Final check')
 
         result = []
         for agent in self.distributed_agents:
             result.append(agent.path)
 
-        print(result)
+        #GET PERFORMANCE DATA AND VISUALIZE
+        self.performance(result)
+        self.visualize_performance(self.performance_agents, self.performance_system)
+
         return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
 
     def define_scope(self, result, timestep, agentID1, scope_rad=2):
@@ -109,25 +132,33 @@ class DistributedPlanningSolver(object):
 
         return scope_map
 
-    def conflict(self, agent_1, agent_2, time, constraints):
+    def conflict(self, agent_1, agent_2, time, constraints, priority_lst):
+        change = False
+        double_priority = False
+        priority_test = []
         for i in range(1,4): # Communicate 3 time steps ahead
             avoidance = False   # Check for avoidance for all 3 time steps
             timestep = time + i  # Timestep which is checked
 
             while avoidance == False:   # Only continue when collision is avoided
                 """ Let agent stay at its final location after path is finished."""
-                while timestep + 1 >= len(agent_1.path):
+                while timestep + 2 >= len(agent_1.path):
                     agent_1.path.append(agent_1.path[-1])
 
-                while timestep + 1 >= len(agent_2.path):
+                while timestep + 2 >= len(agent_2.path):
                     agent_2.path.append(agent_2.path[-1])
 
                 """ Check if collision occurs."""
-                if agent_1.path[timestep] == agent_2.path[timestep]:
-                    print(timestep)
+                if agent_1.path[timestep] == agent_2.path[timestep] or (agent_1.path[timestep] == agent_2.path[timestep-1] and agent_1.path[timestep-1] == agent_2.path[timestep]):
+
                     """ Create alternative paths."""
                     constraint_temp_1 = []
                     constraint_temp_2 = []
+
+                    for constraint in constraints:
+                        if constraint['time'] == time:
+                            constraint_temp_1.append(constraint)
+                            constraint_temp_2.append(constraint)
 
                     for j in range(timestep - time + 2):   # Temporary constraints for the other agent's path
 
@@ -135,166 +166,102 @@ class DistributedPlanningSolver(object):
                                                 'negative': True,
                                                 'agent': agent_1.id,
                                                 'loc': [agent_2.path[j+time]],
-                                                'timestep': j})
+                                                'timestep': j,
+                                                'time': time})
 
                         constraint_temp_2.append({'positive': False,
                                                 'negative': True,
                                                 'agent': agent_2.id,
                                                 'loc': [agent_1.path[j+time]],
-                                                'timestep': j})
+                                                'timestep': j,
+                                                'time': time})
 
                         constraint_temp_1.append({'positive': False,
                                                 'negative': True,
                                                 'agent': agent_1.id,
-                                                'loc': [agent_2.path[j+time], agent_2.path[j-1+time]],
-                                                'timestep': j})
+                                                'loc': [agent_2.path[j+time], agent_2.path[j+time-1]],
+                                                'timestep': j,
+                                                'time': time})
 
                         constraint_temp_2.append({'positive': False,
                                                 'negative': True,
                                                 'agent': agent_2.id,
-                                                'loc': [agent_1.path[j+time], agent_1.path[j-1+time]],
-                                                'timestep': j})
+                                                'loc': [agent_1.path[j+time], agent_1.path[j+time-1]],
+                                                'timestep': j,
+                                                'time': time})
 
                     path_1 = agent_1.find_solution(constraints=constraint_temp_1)
                     path_2 = agent_2.find_solution(constraints=constraint_temp_2)
-                    print("hier", agent_1.path[time], agent_2.path[time])
-                    # if len(path_1) >= len(path_2): # Agent with longest detour receives priority
-                    print(constraints)
-                    #dit lukt niet helemaal want constraints is leeg dus we kunnen hier mee door zodra dit werkt
 
-                    if agent_1.path[time][0] < agent_2.path[time][0] and constraint_temp_2 not in constraints: # then, agent most left in the map receives priority.
+                    if agent_1.path[time][0] < agent_2.path[time][0] or agent_1.path[time][1] > agent_2.path[time][1]: # then, agent most left in the map receives priority # first, agent most south in the map receives priority
                         agent_2.path = agent_2.path[:time] + path_2
-                        constraints.append(constraint_temp_2)
-                    elif agent_1.path[time][1] > agent_2.path[time][1] and constraint_temp_2 not in constraints: # first, agent most south in the map receives priority
-                        agent_2.path = agent_2.path[:time] + path_2
-                        constraints.append(constraint_temp_2)
-                    elif constraint_temp_1 not in constraints:
+                        agent_priority = 1
+                        for constraint in constraint_temp_2:
+                            if constraint not in constraints:
+                                constraints.append(constraint)
+                        priority_test.append(agent_1.id)
+                        priority_test.append(agent_2.id)
+                        priority_test.append(agent_priority)
+                        priority_test.append(time)
+
+
+
+                        change = True
+                    # elif agent_1.path[time][1] > agent_2.path[time][1]: # first, agent most south in the map receives priority
+                    #     agent_2.path = agent_2.path[:time] + path_2
+                    #     for constraint in constraint_temp_2:
+                    #         if constraint not in constraints:
+                    #             constraints.append(constraint)
+                    #     agent_priority = 1
+                    #     change = True
+
+                    else:
                         agent_1.path = agent_1.path[:time] + path_1
-                        constraints.append(constraint_temp_1)
-
-                    if constraint_temp_2 in constraints:
-                        print("hello")
-                        constraints.remove(constraint_temp_2)
-                    elif constraint_temp_1 in constraints:
-                        print("hello 1")
-                        constraints.remove(constraint_temp_1)
-
-
+                        for constraint in constraint_temp_1:
+                            if constraint not in constraints:
+                                constraints.append(constraint)
+                        agent_priority = 2
+                        priority_test.append(agent_2.id)
+                        priority_test.append(agent_1.id)
+                        priority_test.append(agent_priority)
+                        priority_test.append(time)
+                        change = True
 
                 else:   # No collision occurs at timestep
                     avoidance = True
+            print(priority_test)
 
-        return constraints
-    # def conflict(self, agent_1, agent_2, time, constraints):
-    #     for i in range(3):  # Communicate 3 time steps
-    #         avoidance = False
-    #         timestep = time + (i + 1)
-    #
-    #         while avoidance == False:  # Only continue when collision is avoided
-    #
-    #             if timestep >= len(agent_1.path):
-    #                 agent_1.path.append(agent_1.path[-1])
-    #                 curr_loc_1 = agent_1.path[-1]
-    #             else:
-    #                 curr_loc_1 = agent_1.path[timestep]
-    #
-    #             if timestep >= len(agent_2.path):
-    #                 agent_2.path.append(agent_2.path[-1])
-    #                 curr_loc_2 = agent_2.path[-1]
-    #             else:
-    #                 curr_loc_2 = agent_2.path[timestep]
-    #
-    #             if curr_loc_1 == curr_loc_2:  # Collision at timestep
-    #                 print("PATHS", agent_1.path, agent_2.path)
-    #                 """ Construct alternative (temporary) paths for the colliding agents"""
-    #                 constraint_temp_1 = []
-    #                 constraint_temp_2 = []
-    #                 time_temp = 0
-    #                 for loc in agent_1.path:
-    #                     constraint_temp_2.append({'positive': False,
-    #                                               'negative': True,
-    #                                               'agent': agent_2.id,
-    #                                               'loc': loc,
-    #                                               'timestep': time_temp})
-    #                     time_temp += 1
-    #
-    #                 time_temp = 0
-    #                 for loc in agent_2.path:
-    #                     constraint_temp_1.append({'positive': False,
-    #                                               'negative': True,
-    #                                               'agent': agent_1.id,
-    #                                               'loc': loc,
-    #                                               'timestep': time_temp})
-    #                     time_temp += 1
-    #
-    #                 # constraint_temp.append({'positive': False,
-    #                 #                         'negative': True,
-    #                 #                         'agent': agent_1.id,
-    #                 #                         'loc': [curr_loc_1],
-    #                 #                         'timestep': timestep - time
-    #                 #                         })
-    #                 start_1 = agent_1.start
-    #                 start_2 = agent_2.start
-    #
-    #                 path_1 = agent_1.find_solution(constraints=constraints + constraint_temp_1)
-    #                 path_2 = agent_2.find_solution(constraints=constraints + constraint_temp_2)
-    #
-    #                 # constraint_temp.append({'positive': False,
-    #                 #                         'negative': True,
-    #                 #                         'agent': agent_2.id,
-    #                 #                         'loc': [curr_loc_2],
-    #                 #                         'timestep': timestep - time
-    #                 #                         })
-    #                 #
-    #
-    #                 #
-    #                 # agent_1.start = agent_1.path[timestep-1]
-    #                 # path_1 = agent_1.find_solution(constraints=constraints + constraint_temp)
-    #
-    #                 # for place in range(len(path_1)-1):
-    #                 #     constraint_temp.append({'positive': False,
-    #                 #                             'negative': True,
-    #                 #                             'agent': agent_2,
-    #                 #                             'loc':[path_1[place], path_1[place+1]],
-    #                 #                             'timestep': place})
-    #                 print(path_1)
-    #                 # agent_2.start = agent_2.path[timestep-1]
-    #                 # path_2 = agent_2.find_solution(constraints=constraints + constraint_temp)
-    #                 print(path_2)
-    #                 """ Agent with the longest detour gets to keep its original path."""
-    #                 #
-    #                 agent_1.start = start_1
-    #                 agent_2.start = start_2
-    #
-    #                 a = np.random.normal()
-    #
-    #                 if a >= 0.5:
-    #
-    #                     agent_2.path = agent_2.path[:timestep] + path_2
-    #
-    #                     """ The changed path cannot be changed back to include the collision point at the same timestep."""
-    #                     # ADD CONSTRAINT FOR SWITCHING POSITIONS
-    #                     constraints.append({'positive': False,
-    #                                         'negative': True,
-    #                                         'agent': agent_2.id,
-    #                                         'loc': [curr_loc_1],
-    #                                         'timestep': timestep
-    #                                         })
-    #                 else:
-    #                     agent_1.path = agent_1.path[:timestep] + path_1
-    #                     constraints.append({'positive': False,
-    #                                         'negative': True,
-    #                                         'agent': agent_1.id,
-    #                                         'loc': [curr_loc_2],
-    #                                         'timestep': timestep
-    #                                         })
-    #             else:
-    #                 avoidance = True
-    #
-    #     return constraints
+            if priority_test in priority_lst:
+                if priority_test[2] == 1:
+                    priority_test = []
+                    agent_1.path = agent_1.path[:time] + path_1
+                    for constraint in constraint_temp_1:
+                        if constraint not in constraints:
+                            constraints.append(constraint)
+                    for constraint in constraint_temp_2:
+                        if constraint in constraints:
+                            constraints.remove(constraint)
+                    agent_priority = 2
+                    priority_test.append(agent_2.id)
+                    priority_test.append(agent_1.id)
+                    priority_test.append(agent_priority)
+                    priority_test.append(time)
+                if priority_test[2] == 2:
+                    priority_test = []
+                    for constraint in constraint_temp_1:
+                        if constraint not in constraints:
+                            constraints.remove(constraint)
+                    agent_2.path = agent_2.path[:time] + path_2
+                    for constraint in constraint_temp_2:
+                        if constraint in constraints:
+                            constraints.append(constraint)
+                    agent_priority = 1
+                    priority_test.append(agent_1.id)
+                    priority_test.append(agent_2.id)
+                    priority_test.append(agent_priority)
+                    priority_test.append(time)
 
-# DETECT AGENT
-# Function 2: input = map of 0s and 1s, current location all agents -> if agent detected, then output = detected agent's object
+        return constraints, change, priority_test
 
     def detect_agent_in_scope(self, checking_agent, map, time):
         detected_agents = []
@@ -309,3 +276,60 @@ class DistributedPlanningSolver(object):
                 detected_agents.append(agent)
 
         return detected_agents
+
+    def performance(self, result):
+        #AGENT-SPECIFIC INDICATORS
+        distances = dict()
+        travel_times = dict()
+
+        for agent in self.distributed_agents:
+            performance_per_agent = dict()
+
+            #Determine the agent's path without duplicates in the end and also one without waiting time included
+            agent_path = result[agent.id]
+            if agent_path[-1] == result[agent.id][-2]:
+                for i in range(len(agent_path)-1, 0, -1):
+                    if agent_path[i] != agent_path[i - 1]:
+                        break
+                agent_path = agent_path[:i+1]
+            travel_times[agent.id] = len(agent_path) - 1 #fill in travel_times dictionary needed for system wide performance indicators
+
+            pops = []
+            for i in range(len(agent_path)-1):
+                if agent_path[i] == agent_path[i+1]:
+                    pops.append(i)
+            agent_path_no_waiting = [location for idx, location in enumerate(agent_path) if idx not in pops]
+            distances[agent.id] = len(agent_path_no_waiting) - 1 #fill in distances dictionary needed for system wide performance indicators
+
+            #Fill in the performance indicator dictionary per agent
+            performance_per_agent['shortest distance / travel distance'] = (len(set(self.initial_paths[agent.id])) - 1) / (len(agent_path_no_waiting) - 1)
+            performance_per_agent['shortest time / travel time'] = (len(self.initial_paths[agent.id]) - 1) / travel_times[agent.id]
+            if agent.id == 0:
+                print("optimal", self.initial_paths[agent.id])
+                print("actual", agent_path)
+            performance_per_agent['#conflicts / travel time'] =  self.conflict_agents[agent.id] / travel_times[agent.id]
+            self.performance_agents[agent.id] = performance_per_agent
+
+        #SYSTEM-WIDE INDICATORS
+        self.performance_system['maximum time'] = max([value for key, value in travel_times.items()]) #this is the time in which all agents have reached their destination
+        self.performance_system['total time'] = 0 #this is the sum of all times of agents
+        for agent, time in travel_times.items():
+            self.performance_system['total time'] += time
+        self.performance_system['total distance traveled'] = 0
+        for agent, distance in distances.items():
+            self.performance_system['total distance traveled'] += distance
+        self.performance_system['total amount of conflicts'] = sum([value for key, value in self.conflict_agents.items()]) / 2 #divide by 2, because 1 conflict is for 2 agents
+        self.performance_system['average travel time'] = sum([value for key, value in travel_times.items()]) / len(result)
+        self.performance_system['average travel distance'] = self.performance_system['total distance traveled'] / len(result)
+        self.performance_system['average conflicts'] = self.performance_system['total amount of conflicts'] * 2 / len(result) #times two because it is average amount of conflicts per agent
+
+        print(self.conflict_agents)
+        print(self.performance_agents)
+        print(self.performance_system)
+
+    def visualize_performance(self, performance_agents, performance_system):
+        # Heat map
+        # Graphs
+        return None
+
+
