@@ -126,7 +126,6 @@ if __name__ == '__main__':
     result_file = open("results.csv", "w", buffering=1)
 
     for file in sorted(glob.glob(args.instance)):
-
         print("***Import an instance***")
         my_map, starts, goals = import_mapf_instance(file)
         print_mapf_instance(my_map, starts, goals)
