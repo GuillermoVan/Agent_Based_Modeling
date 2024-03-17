@@ -61,7 +61,6 @@ class DistributedPlanningSolver(object):
 
         #while not all agents have reached their target
         while len(arrived) < len(self.distributed_agents) + 1:
-            print(time)
             change = True
             while change == True:
                 change_check = []
@@ -77,9 +76,8 @@ class DistributedPlanningSolver(object):
                     for agent_2 in agents_in_scope:
                         old_length_constraints = len(constraints)
                         constraints, change_curr = self.conflict(agent_1, agent_2, time, constraints)
-                        print(constraints)
                         if len(constraints) != old_length_constraints: #this part is needed for the conflict performance indicators
-                            # print("CONFLICT DETECTED BETWEEN AGENT", agent_1.id, "and", agent_2.id)
+                            #print("CONFLICT DETECTED BETWEEN AGENT", agent_1.id, "and", agent_2.id)
                             self.conflict_agents[agent_1.id] += 1
                             self.conflict_agents[agent_2.id] += 1
                         change_check.append(change_curr)
@@ -128,7 +126,7 @@ class DistributedPlanningSolver(object):
     def conflict(self, agent_1, agent_2, time, constraints):
         change = False
 
-        for i in range(1,4): # Communicate 3 time steps ahead
+        for i in range(1,20): # Communicate 3 time steps ahead
             avoidance = False   # Check for avoidance for all 3 time steps
             timestep = time + i  # Timestep which is checked
 
@@ -245,9 +243,6 @@ class DistributedPlanningSolver(object):
             #Fill in the performance indicator dictionary per agent
             performance_per_agent['shortest distance / travel distance'] = (len(set(self.initial_paths[agent.id])) - 1) / (len(agent_path_no_waiting) - 1)
             performance_per_agent['shortest time / travel time'] = (len(self.initial_paths[agent.id]) - 1) / travel_times[agent.id]
-            if agent.id == 0:
-                print("optimal", self.initial_paths[agent.id])
-                print("actual", agent_path)
             performance_per_agent['#conflicts / travel time'] =  self.conflict_agents[agent.id] / travel_times[agent.id]
             self.performance_agents[agent.id] = performance_per_agent
 
@@ -264,13 +259,19 @@ class DistributedPlanningSolver(object):
         self.performance_system['average travel distance'] = self.performance_system['total distance traveled'] / len(result)
         self.performance_system['average conflicts'] = self.performance_system['total amount of conflicts'] * 2 / len(result) #times two because it is average amount of conflicts per agent
 
-        print(self.conflict_agents)
-        print(self.performance_agents)
-        print(self.performance_system)
+        #CREATE HEAT MAP HERE
+        #map_01 = [[0 if cell else 1 for cell in row] for row in self.my_map]
+        #for agent_path in result:
+
+
+        #print(self.conflict_agents)
+        #print(self.performance_agents)
+        #print(self.performance_system)
 
     def visualize_performance(self, performance_agents, performance_system):
         # Heat map
         # Graphs
         return None
+
 
 
