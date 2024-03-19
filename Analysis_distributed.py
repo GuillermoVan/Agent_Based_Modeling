@@ -2,9 +2,8 @@ import random
 from distributed import DistributedPlanningSolver
 from run_experiments import import_mapf_instance
 import concurrent.futures
-import time
 
-def generate_agents_on_map(input_file_path, output_file_path, num_agents, seed_number, working_check=False):
+def generate_agents_on_map(input_file_path, output_file_path, num_agents, seed_number):
     random.seed(seed_number)
 
     try:
@@ -76,32 +75,37 @@ def run_with_timeout(func, args, timeout, seed_number):
     # Return None to indicate failure or timeout
     return None
 
-input_file_path = 'instances\\map1.txt' #change here the type of map you want
-output_file_path = 'instances\\Output_generator.txt'
-num_agents = 17 #pick the amount of agents that are placed randomly over the map
-amount_of_simulations = 5
+def find_solutions(timeout_time, input_file_path, num_agents, amount_of_simulations):
 
-solutions = 0
-inf_loop = 0
-no_solutions = 0
-timeout_time = 1.5 #put here the amount of time you want to wait before going to next simulation
+    analysis = dict()
+    output_file_path = 'instances\\Output_generator.txt'
 
-for seed_number in range(1, amount_of_simulations + 1):
-    print("current seed = ", seed_number)
-    try:
-        generate_agents_on_map(input_file_path, output_file_path, num_agents, seed_number)
-        my_map, starts, goals = import_mapf_instance(output_file_path)
-        solver = DistributedPlanningSolver(my_map, starts, goals)
+    solutions = 0
+    inf_loop = 0
+    no_solutions = 0
 
-        paths = run_with_timeout(f, [solver], timeout_time, seed_number)
-        if paths is not None:
-            solutions += 1
-            print(seed_number, "HAS A SOLUTION!")
-    except BaseException as e:  #Exception if no solution is found
-        no_solutions += 1
-        print(seed_number, "has no solution")
+    for seed_number in range(1, amount_of_simulations + 1):
+        print("current seed = ", seed_number)
+        try:
+            generate_agents_on_map(input_file_path, output_file_path, num_agents, seed_number)
+            my_map, starts, goals = import_mapf_instance(output_file_path)
+            solver = DistributedPlanningSolver(my_map, starts, goals)
 
-print(no_solutions, 'times of not finding a solution')
-print(inf_loop, 'times of infinite looping')
-print(solutions, 'solutions')
+            paths = run_with_timeout(f, [solver], timeout_time, seed_number)
+            if paths is not None:
+                solutions += 1
+                print(seed_number, "HAS A SOLUTION!")
+        except BaseException as e:  #Exception if no solution is found
+            no_solutions += 1
+            print(seed_number, "has no solution")
 
+    print('######### RESULTS ##########')
+    print(no_solutions, 'times of not finding a solution')
+    print(inf_loop, 'times of infinite looping')
+    print(solutions, 'solutions')
+    print(solutions/(no_solutions + inf_loop + solutions) * 100, '% success rate')
+    print('######### RESULTS ##########')
+
+    return analysis
+
+analysis = find_solutions(timeout_time=3, input_file_path='instances\\map2.txt', num_agents=10, amount_of_simulations=30)
