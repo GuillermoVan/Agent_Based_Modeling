@@ -3,6 +3,7 @@ from run_experiments import import_mapf_instance
 import concurrent.futures
 import random
 import matplotlib.pyplot as plt
+import os
 
 def top_bottom_generate_agents_on_map(input_file_path, output_file_path, num_agents, seed_number):
     random.seed(seed_number)
@@ -251,7 +252,7 @@ def find_solutions(agent_generator, timeout_time, input_file_path, num_agents, a
 
     return analysis
 
-def success_plotter(agent_generator, method, max_agents, input_file_path, amount_of_simulations):
+def success_plotter(agent_generator, method, max_agents, input_file_path, amount_of_simulations, title_success_plot):
     success = []
     num_agents_range = range(1,max_agents+1)
     for num_agents in num_agents_range:
@@ -266,12 +267,15 @@ def success_plotter(agent_generator, method, max_agents, input_file_path, amount
     plt.ylabel('Success Rate')
     plt.title('Success Rate vs. Number of Agents')
     plt.grid(True)
+
+    filename = os.path.join('Graphs', title_success_plot)
+    plt.savefig(filename)
+    plt.close()  # Close the figure after saving
+    print(f"Graph saved as {filename}")
     plt.show()
 
-success_plotter(agent_generator, method='Explicit', max_agents=5, input_file_path='instances\\map1.txt', amount_of_simulations=5)
+title_success_plot = 'success_rate_vs_number_of_agents_map1_explicit_leftright.png'
+success_plotter(agent_generator='left-right', method='Explicit', max_agents=6, input_file_path='instances\\map1.txt', amount_of_simulations=5, \
+                title_success_plot=title_success_plot)
 
-
-
-#analysis = find_solutions(agent_generator = agent_generator, timeout_time=3, input_file_path='instances\\map1.txt', \
-#                          num_agents=15, amount_of_simulations=5, method="Explicit")
-#print(analysis)
+#LOOPING OVER METHODS AND SHOWING PERFORMANCE INDICATORS AS AVERAGE OF MAPS
