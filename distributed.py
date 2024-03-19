@@ -14,7 +14,7 @@ from cbs import detect_collision, detect_collisions
 class DistributedPlanningSolver(object):
     """A distributed planner"""
 
-    def __init__(self, my_map, starts, goals):
+    def __init__(self, my_map, starts, goals, method):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
@@ -23,6 +23,7 @@ class DistributedPlanningSolver(object):
         self.my_map = my_map
         self.starts = starts
         self.goals = goals
+        self.method = method
         self.num_of_agents = len(goals)
         self.heuristics = []
         self.distributed_agents = []
@@ -75,12 +76,13 @@ class DistributedPlanningSolver(object):
                     agents_in_scope = self.detect_agent_in_scope(agent_1, scope_map, time)
                     for agent_2 in agents_in_scope:
                         old_length_constraints = len(constraints)
-                        constraints, change_curr = self.conflict(agent_1, agent_2, time, constraints)
-                        if len(constraints) != old_length_constraints: #this part is needed for the conflict performance indicators
-                            #print("CONFLICT DETECTED BETWEEN AGENT", agent_1.id, "and", agent_2.id)
-                            self.conflict_agents[agent_1.id] += 1
-                            self.conflict_agents[agent_2.id] += 1
-                        change_check.append(change_curr)
+                        if self.method == "Random" or self.method == "Explicit":
+                            constraints, change_curr = self.conflict(agent_1, agent_2, time, constraints)
+                            if len(constraints) != old_length_constraints: #this part is needed for the conflict performance indicators
+                                #print("CONFLICT DETECTED BETWEEN AGENT", agent_1.id, "and", agent_2.id)
+                                self.conflict_agents[agent_1.id] += 1
+                                self.conflict_agents[agent_2.id] += 1
+                            change_check.append(change_curr)
 
                     if agent_1.path[time] == agent_1.goal and agent_1 not in arrived:
                         arrived.append(agent_1)
@@ -182,20 +184,34 @@ class DistributedPlanningSolver(object):
 
                     path_1 = agent_1.find_solution(constraints=constraint_temp_1)
                     path_2 = agent_2.find_solution(constraints=constraint_temp_2)
+                    if self.method == 'Random':
+                        a = np.random.normal(0,1)
+                        if a >= 0.5:
+                            agent_2.path = agent_2.path[:time] + path_2
+                            for constraint in constraint_temp_2:
+                                if constraint not in constraints:
+                                    constraints.append(constraint)
+                            change = True
+                        else:
+                            agent_1.path = agent_1.path[:time] + path_1
+                            for constraint in constraint_temp_1:
+                                if constraint not in constraints:
+                                    constraints.append(constraint)
+                            change = True
+                    elif self.method == 'Explicit':
+                        if len(path_1) >= len(path_2): # Agent with longest detour receives priority
+                            agent_2.path = agent_2.path[:time] + path_2
+                            for constraint in constraint_temp_2:
+                                if constraint not in constraints:
+                                    constraints.append(constraint)
+                            change = True
 
-                    if len(path_1) >= len(path_2): # Agent with longest detour receives priority
-                        agent_2.path = agent_2.path[:time] + path_2
-                        for constraint in constraint_temp_2:
-                            if constraint not in constraints:
-                                constraints.append(constraint)
-                        change = True
-
-                    else:
-                        agent_1.path = agent_1.path[:time] + path_1
-                        for constraint in constraint_temp_1:
-                            if constraint not in constraints:
-                                constraints.append(constraint)
-                        change = True
+                        else:
+                            agent_1.path = agent_1.path[:time] + path_1
+                            for constraint in constraint_temp_1:
+                                if constraint not in constraints:
+                                    constraints.append(constraint)
+                            change = True
 
                 else:   # No collision occurs at timestep
                     avoidance = True
