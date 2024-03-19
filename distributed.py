@@ -184,7 +184,7 @@ class DistributedPlanningSolver(object):
 
                     path_1 = agent_1.find_solution(constraints=constraint_temp_1)
                     path_2 = agent_2.find_solution(constraints=constraint_temp_2)
-                    if self.method = 'Random':
+                    if self.method == 'Random':
                         a = np.random.normal(0,1)
                         if a >= 0.5:
                             agent_2.path = agent_2.path[:time] + path_2
@@ -198,7 +198,7 @@ class DistributedPlanningSolver(object):
                                 if constraint not in constraints:
                                     constraints.append(constraint)
                             change = True
-                    elif self.method = 'Explicit':
+                    elif self.method == 'Explicit':
                         if len(path_1) >= len(path_2): # Agent with longest detour receives priority
                             agent_2.path = agent_2.path[:time] + path_2
                             for constraint in constraint_temp_2:
