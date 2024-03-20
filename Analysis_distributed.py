@@ -5,21 +5,20 @@ import random
 import matplotlib.pyplot as plt
 import os
 
-def top_bottom_generate_agents_on_map(input_file_path, output_file_path, num_agents, seed_number):
-    random.seed(seed_number)
+
+
+def top_bottom_generate_agents_on_map(input_path, output_path, num_agents, seed_val):
+    random.seed(seed_val)
 
     try:
-        with open(input_file_path, 'r') as input_file:
+        with open(input_path, 'r') as input_file:
             lines = input_file.readlines()
 
-            # Grid size
             num_rows, num_columns = map(int, lines[0].strip().split())
 
-            # Map reading
             map_content = [[cell for cell in line.strip() if cell in ".@"] for line in lines[1:1 + num_rows]]
 
-            blocked_positions = set(
-                (x, y) for y, row in enumerate(map_content) for x, cell in enumerate(row) if cell == "@")
+            blocked_positions = set((x, y) for y, row in enumerate(map_content) for x, cell in enumerate(row) if cell == "@")
 
             # Define specific rows for start/end locations
             top_rows = [1, 2]
@@ -36,23 +35,20 @@ def top_bottom_generate_agents_on_map(input_file_path, output_file_path, num_age
                 half_agents = min(len(top_positions), len(bottom_positions))
                 num_agents = 2 * half_agents
 
-            # Randomize the positions
             random.shuffle(top_positions)
             random.shuffle(bottom_positions)
 
-            # Writing the output file
-            with open(output_file_path, 'w') as output_file:
+            #Adjust output file from here
+            with open(output_path, 'w') as output_file:
                 output_file.write(f"{num_rows} {num_columns}\n")
 
-                # Writing the map
                 for line in map_content:
                     output_file.write(" ".join(line) + "\n")
 
                 output_file.write(f"{num_agents}\n")
 
-                # Assign start and goal positions
-                for agent_id in range(num_agents):
-                    if agent_id < half_agents:
+                for agent in range(num_agents):
+                    if agent < half_agents:
                         # Agents starting in top rows
                         start_x, start_y = top_positions.pop()
                         goal_x, goal_y = bottom_positions.pop()
@@ -63,74 +59,59 @@ def top_bottom_generate_agents_on_map(input_file_path, output_file_path, num_age
 
                     output_file.write(f"{start_y} {start_x} {goal_y} {goal_x}\n")
 
-                output_file.write(f"\n \n \n seed = {seed_number}")
+                output_file.write(f"\n \n \n seed = {seed_val}")
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
 
-def left_right_generate_agents_on_map(input_file_path, output_file_path, num_agents, seed_number):
-    random.seed(seed_number)
+def random_generate_agents_on_map(input_path, output_path, num_agents, seed_val):
+    random.seed(seed_val)
 
     try:
-        with open(input_file_path, 'r') as input_file:
+        with open(input_path, 'r') as input_file:
             lines = input_file.readlines()
 
-            # Grid size
             num_rows, num_columns = map(int, lines[0].strip().split())
 
-            # Map reading
-            map_content = [[cell for cell in line.strip() if cell in ".@"]
-                           for line in lines[1:1 + num_rows]]
+            map_content = [[cell for cell in line.strip() if cell in ".@"] for line in lines[1:1 + num_rows]]
 
-            blocked_positions = set(
-                (x, y) for y, row in enumerate(map_content) for x, cell in enumerate(row) if cell == "@")
-            available_positions = [(x, y) for x in range(num_columns) for y in range(num_rows) if
-                                   (x, y) not in blocked_positions]
+            blocked_positions = set((x, y) for y, row in enumerate(map_content) for x, cell in enumerate(row) if cell == "@")
 
-            # Checking the feasability of the number of agents
-            if len(available_positions) < num_agents:
-                print("Not enough available positions for agents. Exiting.")
-                return
+            available_positions = [(x, y) for x in range(num_columns) for y in range(num_rows) if (x, y) not in blocked_positions]
 
-            # Randomize the available positions
             random.shuffle(available_positions)
 
-            # Writing the output file
-            with open(output_file_path, 'w') as output_file:
+            #Adjust output file from here
+            with open(output_path, 'w') as output_file:
                 output_file.write(f"{num_rows} {num_columns}\n")
 
-                # Writing the map
                 for line in map_content:
                     output_file.write(" ".join(line) + "\n")
 
                 output_file.write(f"{num_agents}\n")
 
-                # Writing the agents and their start and goal positions
-                for agent_id in range(1, num_agents + 1):
+                for agent in range(1, num_agents + 1):
                     start_x, start_y = available_positions.pop()
                     goal_x, goal_y = available_positions.pop()
                     output_file.write(f"{start_y} {start_x} {goal_y} {goal_x}\n")
 
-                output_file.write(f"\n \n \n seed = {seed_number}")
+                output_file.write(f"\n \n \n seed = {seed_val}")
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
 
-def random_generate_agents_on_map(input_file_path, output_file_path, num_agents, seed_number):
-    random.seed(seed_number)
+def left_right_generate_agents_on_map(input_path, output_path, num_agents, seed_val):
+    random.seed(seed_val)
 
     try:
-        with open(input_file_path, 'r') as input_file:
+        with open(input_path, 'r') as input_file:
             lines = input_file.readlines()
 
-            # Grid size
             num_rows, num_columns = map(int, lines[0].strip().split())
 
-            # Map reading
-            map_content = [[cell for cell in line.strip() if cell in ".@"]
-                           for line in lines[1:1 + num_rows]]
+            map_content = [[cell for cell in line.strip() if cell in ".@"] for line in lines[1:1 + num_rows]]
 
             blocked_positions = set(
                 (x, y) for y, row in enumerate(map_content) for x, cell in enumerate(row) if cell == "@")
@@ -152,23 +133,20 @@ def random_generate_agents_on_map(input_file_path, output_file_path, num_agents,
                 half_agents = min(len(left_positions), len(right_positions))
                 num_agents = 2 * half_agents
 
-            # Randomize the positions
             random.shuffle(left_positions)
             random.shuffle(right_positions)
 
-            # Writing the output file
-            with open(output_file_path, 'w') as output_file:
+            #Adjust output file from here
+            with open(output_path, 'w') as output_file:
                 output_file.write(f"{num_rows} {num_columns}\n")
 
-                # Writing the map
                 for line in map_content:
                     output_file.write(" ".join(line) + "\n")
 
                 output_file.write(f"{num_agents}\n")
 
-                # Assign start and goal positions
-                for agent_id in range(num_agents):
-                    if agent_id < half_agents:
+                for agent in range(num_agents):
+                    if agent < half_agents:
                         # Agents traveling from left to right
                         start_x, start_y = left_positions.pop()
                         goal_x, goal_y = right_positions.pop()
@@ -179,7 +157,7 @@ def random_generate_agents_on_map(input_file_path, output_file_path, num_agents,
 
                     output_file.write(f"{start_y} {start_x} {goal_y} {goal_x}\n")
 
-                output_file.write(f"\n \n \n seed = {seed_number}")
+                output_file.write(f"\n \n \n seed = {seed_val}")
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
@@ -275,7 +253,7 @@ def success_plotter(agent_generator, method, max_agents, input_file_path, amount
     plt.show()
 
 title_success_plot = 'success_rate_vs_number_of_agents_map1_explicit_leftright.png'
-success_plotter(agent_generator='left-right', method='Explicit', max_agents=6, input_file_path='instances\\map1.txt', amount_of_simulations=5, \
+success_plotter(agent_generator='left-right', method='Explicit', max_agents=10, input_file_path='instances\\map1.txt', amount_of_simulations=1, \
                 title_success_plot=title_success_plot)
 
 #LOOPING OVER METHODS AND SHOWING PERFORMANCE INDICATORS AS AVERAGE OF MAPS
