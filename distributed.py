@@ -188,7 +188,10 @@ class DistributedPlanningSolver(object):
                         agent_1.random = np.random.normal(0,1)
                         agent_2.random = np.random.normal(0,1)
 
-                        if agent_1.random >= agent_2.random:
+                        while agent_2.random == agent_1.random:
+                            agent_2.random = np.random.normal(0,1)
+
+                        if agent_1.random > agent_2.random:
                             agent_2.path = agent_2.path[:time] + path_2
                             for constraint in constraint_temp_2:
                                 if constraint not in constraints:
