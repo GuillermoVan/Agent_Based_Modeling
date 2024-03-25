@@ -262,8 +262,8 @@ class DistributedPlanningSolver(object):
             distances[agent.id] = len(agent_path_no_waiting) - 1 #fill in distances dictionary needed for system wide performance indicators
 
             #Fill in the performance indicator dictionary per agent
-            performance_per_agent['shortest distance / travel distance'] = (len(set(self.initial_paths[agent.id])) - 1) / (len(agent_path_no_waiting) - 1)
-            performance_per_agent['shortest time / travel time'] = (len(self.initial_paths[agent.id]) - 1) / travel_times[agent.id]
+            performance_per_agent['travel distance / shortest distance'] = (len(agent_path_no_waiting) - 1) / (len(set(self.initial_paths[agent.id])) - 1)
+            performance_per_agent['travel time / shortest time'] =  travel_times[agent.id] / (len(self.initial_paths[agent.id]) - 1)
             performance_per_agent['#conflicts / travel time'] =  self.conflict_agents[agent.id] / travel_times[agent.id]
             self.performance_agents[agent.id] = performance_per_agent
 

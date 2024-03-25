@@ -4,6 +4,8 @@ import concurrent.futures
 import random
 import matplotlib.pyplot as plt
 import os
+import numpy as np
+import seaborn as sns
 
 
 
@@ -186,7 +188,7 @@ def run_with_timeout(func, args, timeout, seed_number):
     # Return None to indicate failure or timeout
     return None
 
-def find_solutions(agent_generator, timeout_time, input_file_path, num_agents, amount_of_simulations, method):
+def find_solutions(agent_generator, timeout_time, input_file_path, num_agents, amount_of_simulations, method, comparison):
 
     analysis = {'success rate': 0, 'system performance per sim': []}
     output_file_path = 'instances\\Output_generator.txt'
@@ -195,7 +197,12 @@ def find_solutions(agent_generator, timeout_time, input_file_path, num_agents, a
     inf_loop = 0
     no_solutions = 0
 
-    for seed_number in range(1, amount_of_simulations + 1):
+    if comparison == True:
+        start_amount = amount_of_simulations
+    else:
+        start_amount = 1
+
+    for seed_number in range(start_amount, amount_of_simulations + 1):
         print("current seed = ", seed_number)
         analysis['system performance per sim'].append(None)
         try:
@@ -236,7 +243,7 @@ def success_plotter(agent_generator, method, max_agents, input_file_path, amount
     for num_agents in num_agents_range:
         print("current number of agents = ", num_agents)
         analysis = find_solutions(agent_generator = agent_generator, timeout_time=2, input_file_path=input_file_path, \
-                              num_agents=num_agents, amount_of_simulations=amount_of_simulations, method=method)
+                              num_agents=num_agents, amount_of_simulations=amount_of_simulations, method=method, comparison=False)
         success.append(analysis['success rate'])
 
     plt.figure(figsize=(10, 6))
@@ -251,9 +258,93 @@ def success_plotter(agent_generator, method, max_agents, input_file_path, amount
     plt.close()  # Close the figure after saving
     print(f"Graph saved as {filename}")
     plt.show()
+    return
+#title_success_plot = 'success_rate_vs_number_of_agents_map1_explicit_leftright.png' #give here the name of saving the file
+#success_plotter(agent_generator='left-right', method='explicit', max_agents=10, input_file_path='instances\\map1.txt', amount_of_simulations=1, \
+#                title_success_plot=title_success_plot)
 
-title_success_plot = 'success_rate_vs_number_of_agents_map1_explicit_leftright.png'
-success_plotter(agent_generator='left-right', method='Explicit', max_agents=10, input_file_path='instances\\map1.txt', amount_of_simulations=1, \
-                title_success_plot=title_success_plot)
 
-#LOOPING OVER METHODS AND SHOWING PERFORMANCE INDICATORS AS AVERAGE OF MAPS
+
+
+#COMPARE THE PERFORMANCE INDICATORS OF THE DIFFERENT METHODS, FOR A SPECIFIC MAP/NUM_AGENTS/AGENT_GENERATOR
+def has_converged(values, threshold_percent, window_size, min_consecutive_windows=3):
+    if len(values) < window_size:
+        return False
+    averages = [sum(values[i:i + window_size]) / window_size for i in range(len(values) - window_size + 1)]
+    consecutive_below_threshold = 0
+    for i in range(1, len(averages)):
+        if averages[i-1] == 0:
+            if averages[i] != 0:
+                consecutive_below_threshold = 0
+            else:
+                consecutive_below_threshold += 1
+        else:
+            relative_change = abs((averages[i] - averages[i-1]) / averages[i-1])
+            if relative_change <= threshold_percent / 100.0:
+                consecutive_below_threshold += 1
+            else:
+                consecutive_below_threshold = 0
+        if consecutive_below_threshold >= min_consecutive_windows:
+            return True
+    return False
+
+def compare_performance_methods(agent_generator, num_agents, input_file_path, performance_indicator, methods2compare):
+
+    result = dict()
+
+    for method in methods2compare:
+        cv_values = []
+        cv_has_converged = False
+        amount_of_simulations = 1
+        print("CURRENT METHOD = ", method)
+        result_method = []
+        while cv_has_converged is False or amount_of_simulations < 5: #minimum of X simulations tried
+            analysis = find_solutions(agent_generator=agent_generator, timeout_time=2, input_file_path=input_file_path, \
+                                  num_agents=num_agents, amount_of_simulations=amount_of_simulations, method=method, comparison=True)
+            #with comparison=True only one simulation is done everytime in this loop, saving time when running this while loop
+            for system_performance in analysis['system performance per sim']:
+                if system_performance is not None: #do not take performance into account of a failed simulation
+                    result_method.append(system_performance[performance_indicator])
+
+                    std_dev = np.std(result_method)
+                    mean = np.mean(result_method)
+                    cv = std_dev / mean if mean != 0 else float('inf')
+                    cv_values.append(cv)
+                    cv_has_converged = has_converged(values=cv_values, threshold_percent=30, window_size=3) #set threshold percentage here
+
+            if amount_of_simulations == 20: #after X simulations it stops evaluating the performance for this method
+                print("COEFFICIENT OF VARIATION NOT ABLE TO CONVERGE FOR FOLLOWING METHOD: " + method)
+                break
+            amount_of_simulations += 1
+        result[method] = result_method
+
+    labels, data = [], []
+    for key, values in result.items():
+        labels.append(key)
+        data.append(values)
+
+    # Plotting
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(data=data)
+    new_labels = [f"{key} (n={len(values)})" for key, values in result.items()]
+    plt.xticks(range(len(labels)), new_labels)
+    plt.title("Boxplot of Distributed Method Performance: " + performance_indicator)
+    plt.xlabel("Method")
+    plt.ylabel("Performance")
+    plt.show()
+
+    #Maybe add something to save the figure
+
+    return
+'''
+OPTIONS FOR PERFORMANCE INDICATORS: 'maximum time', 'total time', 'total distance traveled', 'total amount of conflicts', 'average travel time',
+'average travel distance', 'average conflicts'
+'''
+compare_performance_methods(agent_generator='left-right', num_agents=7, input_file_path='instances\\map1.txt', \
+                            performance_indicator='average travel time', methods2compare=['Explicit', 'Random'])
+
+
+
+
+
+
