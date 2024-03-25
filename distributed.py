@@ -241,6 +241,7 @@ class DistributedPlanningSolver(object):
         #AGENT-SPECIFIC INDICATORS
         distances = dict()
         travel_times = dict()
+        self.performance_system['agent paths with waiting'] = []
 
         for agent in self.distributed_agents:
             performance_per_agent = dict()
@@ -267,6 +268,8 @@ class DistributedPlanningSolver(object):
             performance_per_agent['#conflicts / travel time'] =  self.conflict_agents[agent.id] / travel_times[agent.id]
             self.performance_agents[agent.id] = performance_per_agent
 
+            self.performance_system['agent paths with waiting'].append(agent_path) #this has to be done this way for the heat map later on
+
         #SYSTEM-WIDE INDICATORS
         self.performance_system['maximum time'] = max([value for key, value in travel_times.items()]) #this is the time in which all agents have reached their destination
         self.performance_system['total time'] = 0 #this is the sum of all times of agents
@@ -279,6 +282,7 @@ class DistributedPlanningSolver(object):
         self.performance_system['average travel time'] = sum([value for key, value in travel_times.items()]) / len(result)
         self.performance_system['average travel distance'] = self.performance_system['total distance traveled'] / len(result)
         self.performance_system['average conflicts'] = self.performance_system['total amount of conflicts'] * 2 / len(result) #times two because it is average amount of conflicts per agent
+
 
         #CREATE HEAT MAP HERE
         #map_01 = [[0 if cell else 1 for cell in row] for row in self.my_map]

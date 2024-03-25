@@ -4,8 +4,12 @@ import concurrent.futures
 import random
 import matplotlib.pyplot as plt
 import os
+
 import numpy as np
 import seaborn as sns
+
+import plotly.graph_objects as go
+import os
 
 
 
@@ -188,7 +192,7 @@ def run_with_timeout(func, args, timeout, seed_number):
     # Return None to indicate failure or timeout
     return None
 
-def find_solutions(agent_generator, timeout_time, input_file_path, num_agents, amount_of_simulations, method, comparison):
+def find_solutions(agent_generator, timeout_time, input_file_path, num_agents, amount_of_simulations, method, comparison=False, heat_map=False):
 
     analysis = {'success rate': 0, 'system performance per sim': []}
     output_file_path = 'instances\\Output_generator.txt'
@@ -235,7 +239,10 @@ def find_solutions(agent_generator, timeout_time, input_file_path, num_agents, a
 
     analysis['success rate'] = success_rate
 
-    return analysis
+    if heat_map is True:
+        return analysis, my_map
+    else:
+        return analysis
 
 def success_plotter(agent_generator, method, max_agents, input_file_path, amount_of_simulations, title_success_plot):
     success = []
@@ -243,7 +250,7 @@ def success_plotter(agent_generator, method, max_agents, input_file_path, amount
     for num_agents in num_agents_range:
         print("current number of agents = ", num_agents)
         analysis = find_solutions(agent_generator = agent_generator, timeout_time=2, input_file_path=input_file_path, \
-                              num_agents=num_agents, amount_of_simulations=amount_of_simulations, method=method, comparison=False)
+                              num_agents=num_agents, amount_of_simulations=amount_of_simulations, method=method)
         success.append(analysis['success rate'])
 
     plt.figure(figsize=(10, 6))
@@ -259,15 +266,14 @@ def success_plotter(agent_generator, method, max_agents, input_file_path, amount
     print(f"Graph saved as {filename}")
     plt.show()
     return
-#title_success_plot = 'success_rate_vs_number_of_agents_map1_explicit_leftright.png' #give here the name of saving the file
 #success_plotter(agent_generator='left-right', method='explicit', max_agents=10, input_file_path='instances\\map1.txt', amount_of_simulations=1, \
-#                title_success_plot=title_success_plot)
+#                title_success_plot='success_rate_vs_number_of_agents_map1_explicit_leftright.png')
 
 
 
 
 #COMPARE THE PERFORMANCE INDICATORS OF THE DIFFERENT METHODS, FOR A SPECIFIC MAP/NUM_AGENTS/AGENT_GENERATOR
-def has_converged(values, threshold_percent, window_size, min_consecutive_windows=3):
+def has_converged(values, threshold_percent, window_size, min_consecutive_windows):
     if len(values) < window_size:
         return False
     averages = [sum(values[i:i + window_size]) / window_size for i in range(len(values) - window_size + 1)]
@@ -310,7 +316,8 @@ def compare_performance_methods(agent_generator, num_agents, input_file_path, pe
                     mean = np.mean(result_method)
                     cv = std_dev / mean if mean != 0 else float('inf')
                     cv_values.append(cv)
-                    cv_has_converged = has_converged(values=cv_values, threshold_percent=30, window_size=3) #set threshold percentage here
+                    cv_has_converged = has_converged(values=cv_values, threshold_percent=30, window_size=3, \
+                                                     min_consecutive_windows=2) #set convergence determination parameters here
 
             if amount_of_simulations == 20: #after X simulations it stops evaluating the performance for this method
                 print("COEFFICIENT OF VARIATION NOT ABLE TO CONVERGE FOR FOLLOWING METHOD: " + method)
@@ -323,6 +330,7 @@ def compare_performance_methods(agent_generator, num_agents, input_file_path, pe
         labels.append(key)
         data.append(values)
 
+    print("PLOTTING THE RESULTS NOW")
     # Plotting
     plt.figure(figsize=(10, 6))
     sns.boxplot(data=data)
@@ -340,11 +348,54 @@ def compare_performance_methods(agent_generator, num_agents, input_file_path, pe
 OPTIONS FOR PERFORMANCE INDICATORS: 'maximum time', 'total time', 'total distance traveled', 'total amount of conflicts', 'average travel time',
 'average travel distance', 'average conflicts'
 '''
-compare_performance_methods(agent_generator='left-right', num_agents=7, input_file_path='instances\\map1.txt', \
-                            performance_indicator='average travel time', methods2compare=['Explicit', 'Random'])
+#compare_performance_methods(agent_generator='left-right', num_agents=7, input_file_path='instances\\map1.txt', \
+#                            performance_indicator='average travel time', methods2compare=['Explicit', 'Random'])
 
 
+def create_heat_map(agent_generator, num_agents, input_file_path, amount_of_simulations, method, title_success_plot, waiting_cells):
 
+    analysis, my_map = find_solutions(agent_generator=agent_generator, timeout_time=2, input_file_path=input_file_path,
+                                      num_agents=num_agents, amount_of_simulations=amount_of_simulations, method=method, heat_map=True)
+
+    heat_map = [[np.nan if cell else 0 for cell in row] for row in my_map]
+
+    for perf_dict in analysis['system performance per sim']:
+        if perf_dict is not None:
+            paths = perf_dict['agent paths with waiting']
+            for path in paths:
+                if waiting_cells == False: #if we want to see where every agent passes
+                    for cell in path:
+                        heat_map[cell[0]][cell[1]] += (1/amount_of_simulations) #normalize with amount of simulations to get an understandable result
+                else:
+                    cell_prev = 0
+                    for cell in path:
+                        if cell == path[-1]:
+                            break
+                        if cell == cell_prev and cell != path[0]: #if agent has to wait, then the heat map gets hotter
+                            heat_map[cell[0]][cell[1]] += (1/amount_of_simulations) #normalize with amount of simulations to get an understandable result
+                        cell_prev = cell
+
+    # Create the heatmap
+    plt.figure(figsize=(12, 8))
+    print("creating heat map...")
+    sns.heatmap(heat_map, cmap="coolwarm", annot=True, cbar=True, linewidths=.5, cbar_kws={'label': 'Average amount of agents passing per simulation'})
+    print("adding title...")
+    plt.title("Heat Map Visualization")
+    print("saving heat map...")
+
+    filename = os.path.join('Graphs', title_success_plot)
+    plt.savefig(filename)
+    plt.close()  # Close the figure after saving
+    print(f"Graph saved as {filename}")
+    print('Stop manually!')
+
+    return heat_map
+
+create_heat_map(agent_generator='top-bottom', num_agents=10, input_file_path='instances\\map1.txt', amount_of_simulations=30, \
+                method='Random', title_success_plot='heat_map_random_top_bottom.png', waiting_cells=True)
+
+create_heat_map(agent_generator='top-bottom', num_agents=10, input_file_path='instances\\map1.txt', amount_of_simulations=30, \
+                method='Explicit', title_success_plot='heat_map_explicit_top_bottom.png', waiting_cells=True)
 
 
 
