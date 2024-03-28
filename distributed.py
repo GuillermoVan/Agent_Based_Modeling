@@ -76,7 +76,7 @@ class DistributedPlanningSolver(object):
                     agents_in_scope = self.detect_agent_in_scope(agent_1, scope_map, time)
                     for agent_2 in agents_in_scope:
                         old_length_constraints = len(constraints)
-                        if self.method == "Random" or self.method == "Explicit":
+                        if self.method == "Random" or self.method == "Explicit" or self.method == "Implicit":
                             constraints, change_curr = self.conflict(agent_1, agent_2, time, constraints)
                             if len(constraints) != old_length_constraints: #this part is needed for the conflict performance indicators
                                 #print("CONFLICT DETECTED BETWEEN AGENT", agent_1.id, "and", agent_2.id)
@@ -212,6 +212,42 @@ class DistributedPlanningSolver(object):
                                 if constraint not in constraints:
                                     constraints.append(constraint)
                             change = True
+
+                    elif self.method == 'Implicit':
+                        if agent_1.id > agent_2.id and (agent_2.path.count(agent_2.path[time]) <= 4 and agent_2.path[
+                            time] != agent_2.goal):  # Agent with  highest agent id has priority
+                            agent_2.path = agent_2.path[:time] + path_2
+                            for constraint in constraint_temp_2:
+                                if constraint not in constraints:
+                                    constraints.append(constraint)
+                            prioritized_agent = agent_1.id
+                            change = True
+
+                        elif agent_2.id > agent_1.id and (
+                                agent_1.path.count(agent_1.path[time]) <= 4 and agent_1.path[time] != agent_1.goal):
+                            agent_1.path = agent_1.path[:time] + path_1
+                            for constraint in constraint_temp_1:
+                                if constraint not in constraints:
+                                    constraints.append(constraint)
+                            prioritized_agent = agent_2.id
+                            change = True
+
+                        elif agent_2.path.count(agent_2.path[time]) > 4 and agent_2.path[time] != agent_2.goal:
+                            agent_1.path = agent_1.path[:time] + path_1
+                            for constraint in constraint_temp_1:
+                                if constraint not in constraints:
+                                    constraints.append(constraint)
+                            prioritized_agent = agent_2.id
+                            change = True
+
+                        elif agent_1.path.count(agent_1.path[time]) > 4 and agent_1.path[time] != agent_1.goal:
+                            agent_2.path = agent_2.path[:time] + path_2
+                            for constraint in constraint_temp_2:
+                                if constraint not in constraints:
+                                    constraints.append(constraint)
+                            prioritized_agent = agent_1.id
+                            change = True
+
 
                 else:   # No collision occurs at timestep
                     avoidance = True
