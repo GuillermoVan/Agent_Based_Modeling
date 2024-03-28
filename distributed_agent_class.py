@@ -22,6 +22,7 @@ class DistributedAgent(object):
         self.id = agent_id
         self.heuristics = heuristics
         self.path = self.find_solution()
+        self.random = 0
 
     def find_solution(self, constraints=[]):
         """ Finds paths for all agents from their start locations to their goal locations."""

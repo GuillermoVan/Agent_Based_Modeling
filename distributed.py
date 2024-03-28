@@ -185,8 +185,13 @@ class DistributedPlanningSolver(object):
                     path_1 = agent_1.find_solution(constraints=constraint_temp_1)
                     path_2 = agent_2.find_solution(constraints=constraint_temp_2)
                     if self.method == 'Random':
-                        a = np.random.normal(0,1)
-                        if a >= 0.5:
+                        agent_1.random = np.random.normal(0,1)
+                        agent_2.random = np.random.normal(0,1)
+
+                        while agent_2.random == agent_1.random:
+                            agent_2.random = np.random.normal(0,1)
+
+                        if agent_1.random > agent_2.random:
                             agent_2.path = agent_2.path[:time] + path_2
                             for constraint in constraint_temp_2:
                                 if constraint not in constraints:
@@ -272,6 +277,7 @@ class DistributedPlanningSolver(object):
         #AGENT-SPECIFIC INDICATORS
         distances = dict()
         travel_times = dict()
+        self.performance_system['agent paths with waiting'] = []
 
         for agent in self.distributed_agents:
             performance_per_agent = dict()
@@ -293,10 +299,12 @@ class DistributedPlanningSolver(object):
             distances[agent.id] = len(agent_path_no_waiting) - 1 #fill in distances dictionary needed for system wide performance indicators
 
             #Fill in the performance indicator dictionary per agent
-            performance_per_agent['shortest distance / travel distance'] = (len(set(self.initial_paths[agent.id])) - 1) / (len(agent_path_no_waiting) - 1)
-            performance_per_agent['shortest time / travel time'] = (len(self.initial_paths[agent.id]) - 1) / travel_times[agent.id]
+            performance_per_agent['travel distance / shortest distance'] = (len(agent_path_no_waiting) - 1) / (len(set(self.initial_paths[agent.id])) - 1)
+            performance_per_agent['travel time / shortest time'] =  travel_times[agent.id] / (len(self.initial_paths[agent.id]) - 1)
             performance_per_agent['#conflicts / travel time'] =  self.conflict_agents[agent.id] / travel_times[agent.id]
             self.performance_agents[agent.id] = performance_per_agent
+
+            self.performance_system['agent paths with waiting'].append(agent_path) #this has to be done this way for the heat map later on
 
         #SYSTEM-WIDE INDICATORS
         self.performance_system['maximum time'] = max([value for key, value in travel_times.items()]) #this is the time in which all agents have reached their destination
@@ -310,6 +318,7 @@ class DistributedPlanningSolver(object):
         self.performance_system['average travel time'] = sum([value for key, value in travel_times.items()]) / len(result)
         self.performance_system['average travel distance'] = self.performance_system['total distance traveled'] / len(result)
         self.performance_system['average conflicts'] = self.performance_system['total amount of conflicts'] * 2 / len(result) #times two because it is average amount of conflicts per agent
+
 
         #CREATE HEAT MAP HERE
         #map_01 = [[0 if cell else 1 for cell in row] for row in self.my_map]
