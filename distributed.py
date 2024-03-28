@@ -128,7 +128,7 @@ class DistributedPlanningSolver(object):
     def conflict(self, agent_1, agent_2, time, constraints):
         change = False
 
-        for i in range(1,20): # Communicate 3 time steps ahead
+        for i in range(1,20): # Communicate X time steps ahead
             avoidance = False   # Check for avoidance for all 3 time steps
             timestep = time + i  # Timestep which is checked
 
@@ -319,19 +319,8 @@ class DistributedPlanningSolver(object):
         self.performance_system['average travel distance'] = self.performance_system['total distance traveled'] / len(result)
         self.performance_system['average conflicts'] = self.performance_system['total amount of conflicts'] * 2 / len(result) #times two because it is average amount of conflicts per agent
 
-
-        #CREATE HEAT MAP HERE
-        #map_01 = [[0 if cell else 1 for cell in row] for row in self.my_map]
-        #for agent_path in result:
-
-
-        #print(self.conflict_agents)
-        #print(self.performance_agents)
-        #print(self.performance_system)
-
     def visualize_performance(self, performance_agents, performance_system):
-        # Heat map
-        # Graphs
+
         return None
 
 
