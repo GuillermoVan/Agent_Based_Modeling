@@ -14,7 +14,7 @@ from cbs import detect_collision, detect_collisions
 class DistributedPlanningSolver(object):
     """A distributed planner"""
 
-    def __init__(self, my_map, starts, goals, method):
+    def __init__(self, my_map, starts, goals, method, add_on):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
@@ -31,6 +31,7 @@ class DistributedPlanningSolver(object):
         self.performance_agents = dict()
         self.performance_system = dict()
         self.conflict_agents = dict()
+        self.add_on = add_on
 
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
@@ -54,6 +55,12 @@ class DistributedPlanningSolver(object):
             paths.append(newAgent.path)
             self.initial_paths[newAgent.id] = newAgent.path.copy()
             self.conflict_agents[newAgent.id] = 0
+
+
+        if self.add_on == True:
+            for i in range(self.num_of_agents):
+                self.heuristics[i] = self.weighted_h_values(self.heuristics[i])
+
 
 
         time = 0
@@ -107,6 +114,43 @@ class DistributedPlanningSolver(object):
         self.visualize_performance(self.performance_agents, self.performance_system)
 
         return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
+    def weighted_h_values(self, h_values):
+        '''
+        function that takes all initial paths found, finds conficts.
+        If there is a conflict at a gridspace at any time, this gridspace will get a +1 for the heuristic function, used in a_star, for all agents involved in conflict
+        Returns: h_values_new : new heuristics for all agents
+        '''
+        time = 0
+        arrived = []
+
+        # while not all agents have reached their target
+        while len(arrived) < len(self.distributed_agents):
+            for agent_1 in self.distributed_agents:
+                # if agent_1 not in arrived:
+                if time >= len(agent_1.path):
+                    agent_1.path.append(agent_1.path[-1])
+
+
+                for agent_2 in self.distributed_agents:
+                    if time >= len(agent_2.path):
+                        agent_2.path.append(agent_2.path[-1])
+
+                    if agent_1 != agent_2 and agent_1.path[time] == agent_2.path[time]:
+                        # print("Collision found in initial at", time, "on", agent_1.path[time], "between", agent_1, agent_2)
+                        agent_1.heuristics[agent_1.path[time]] += 1
+                        # agent_2.heuristics[agent_2.path[time]] += 1
+
+                    elif (agent_1.path[time] == agent_2.path[time-1] and agent_1.path[time-1] == agent_2.path[time]) and time !=0 :
+                        # print("Collision found in initial at", time, "on", agent_1.path[time], "between", agent_1, agent_2)
+                        agent_1.heuristics[agent_1.path[time]] += 1
+                        # agent_2.heuristics[agent_2.path[time]] += 1
+
+                if agent_1.path[time] == agent_1.goal and agent_1 not in arrived:
+                    arrived.append(agent_1)
+
+            time += 1
+
+        return h_values
 
     def define_scope(self, result, timestep, agentID1, scope_rad=2):
         complete_map = [[0 if cell else 1 for cell in row] for row in self.my_map]
@@ -128,7 +172,7 @@ class DistributedPlanningSolver(object):
     def conflict(self, agent_1, agent_2, time, constraints):
         change = False
 
-        for i in range(1,20): # Communicate X time steps ahead
+        for i in range(1,20): # Communicate 3 time steps ahead
             avoidance = False   # Check for avoidance for all 3 time steps
             timestep = time + i  # Timestep which is checked
 
@@ -319,8 +363,19 @@ class DistributedPlanningSolver(object):
         self.performance_system['average travel distance'] = self.performance_system['total distance traveled'] / len(result)
         self.performance_system['average conflicts'] = self.performance_system['total amount of conflicts'] * 2 / len(result) #times two because it is average amount of conflicts per agent
 
-    def visualize_performance(self, performance_agents, performance_system):
 
+        #CREATE HEAT MAP HERE
+        #map_01 = [[0 if cell else 1 for cell in row] for row in self.my_map]
+        #for agent_path in result:
+
+
+        #print(self.conflict_agents)
+        #print(self.performance_agents)
+        #print(self.performance_system)
+
+    def visualize_performance(self, performance_agents, performance_system):
+        # Heat map
+        # Graphs
         return None
 
 
