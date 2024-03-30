@@ -154,7 +154,7 @@ class DistributedPlanningSolver(object):
 
     def define_scope(self, result, timestep, agentID1, scope_rad=2):
         complete_map = [[0 if cell else 1 for cell in row] for row in self.my_map]
-
+        print(complete_map)
         center_row, center_col = agentID1.path[timestep]
 
         # Create a copy of the complete_map
@@ -166,7 +166,84 @@ class DistributedPlanningSolver(object):
                 distance = abs(center_row - i) + abs(center_col - j)  # Manhattan distance
                 if distance > scope_rad:
                     scope_map[i][j] = 0
+                if distance <= scope_rad:
+                    # Check for obstacles between current cell and center cell
+                    no_obstacle = True
+                    if i != center_row or j != center_col:  # Exclude center cell
+                        min_i, max_i = min(i, center_row), max(i, center_row)
+                        min_j, max_j = min(j, center_col), max(j, center_col)
+                        for x in range(min_i, max_i + 1):
+                            for y in range(min_j, max_j + 1):
+                                if complete_map[x][y] == 0:
+                                    no_obstacle = False
+                                    break
+                            if not no_obstacle:
+                                break
 
+                        if not no_obstacle:
+                            scope_map[i][j] = 0
+                # if scope_map[i][j] == 1:
+                #     if i != center_row and j!= center_col:
+                #
+                #     # Check if there's a 0 between the center cell and the current cell
+                #     if center_row == i:
+                #         start_col = min(center_col, j) + 1
+                #         end_col = max(center_col, j)
+                #         if any(complete_map[center_row][start_col:end_col]):
+                #             scope_map[i][j] = 0
+                #     elif center_col == j:
+                #         start_row = min(center_row, i) + 1
+                #         end_row = max(center_row, i)
+                #         if any(complete_map[row][center_col] for row in range(start_row, end_row)):
+                #             scope_map[i][j] = 0
+                # elif complete_map[i][j] == 0:  # If there's an obstacle
+                #     # Check if the obstacle is blocking the line of sight
+                #     if center_row != i or center_col != j:  # Ensure not the same cell
+                #         if center_row == i:  # Same row
+                #             min_col = min(center_col, j)
+                #             max_col = max(center_col, j)
+                #             if all(complete_map[center_row][min_col + 1:max_col]):
+                #                 scope_map[i][j] = 0
+                #         elif center_col == j:  # Same column
+                #             min_row = min(center_row, i)
+                #             max_row = max(center_row, i)
+                #             if min_row < i:  # Check if the obstacle is above the agent
+                #                 if all(complete_map[row][center_col] for row in range(min_row + 1, i)):
+                #                     scope_map[i][j] = 1
+                #             elif min_row > i:  # Check if the obstacle is below the agent
+                #                 if all(complete_map[row][center_col] for row in range(i + 1, max_row)):
+                #                     scope_map[i][j] = 1
+                #         else:  # Diagonal case
+                #             delta_row = i - center_row
+                #             delta_col = j - center_col
+                #             step_row = -1 if delta_row < 0 else 1
+                #             step_col = -1 if delta_col < 0 else 1
+                #             curr_row, curr_col = center_row, center_col
+                #             visible = True
+                #             while curr_row != i and curr_col != j:
+                #                 curr_row += step_row
+                #                 curr_col += step_col
+                #                 if complete_map[curr_row][curr_col] == 0:
+                #                     visible = False
+                #                     break
+                #             if visible:
+                #                 scope_map[i][j] = 1
+                #         # Check for visibility and update the scope map accordingly
+                #         if scope_map[i][j] == 1:
+                #             # Check if there's a 0 between the center cell and the current cell
+                #             if center_row == i:
+                #                 start_col = min(center_col, j) + 1
+                #                 end_col = max(center_col, j)
+                #                 if any(complete_map[center_row][start_col:end_col]):
+                #                     scope_map[i][j] = 0
+                #             elif center_col == j:
+                #                 start_row = min(center_row, i) + 1
+                #                 end_row = max(center_row, i)
+                #                 if any(complete_map[row][center_col] for row in range(start_row, end_row)):
+                #                     scope_map[i][j] = 0
+                # if complete_map[i][j] == 1:  # If it can see, check if there is a 0 in between the two
+                #     print(center_row, center_col)
+        print(scope_map)
         return scope_map
 
     def conflict(self, agent_1, agent_2, time, constraints):
