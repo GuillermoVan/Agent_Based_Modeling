@@ -14,7 +14,7 @@ from cbs import detect_collision, detect_collisions
 class DistributedPlanningSolver(object):
     """A distributed planner"""
 
-    def __init__(self, my_map, starts, goals, method, add_on):
+    def __init__(self, my_map, starts, goals, method, add_on, steps_ahead, scope_rad):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
@@ -32,6 +32,8 @@ class DistributedPlanningSolver(object):
         self.performance_system = dict()
         self.conflict_agents = dict()
         self.add_on = add_on
+        self.steps_ahead = steps_ahead
+        self.scope_rad = scope_rad
 
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
@@ -79,7 +81,7 @@ class DistributedPlanningSolver(object):
                         agent_1.path.append(agent_1.path[-1])
                     agent_1.start = agent_1.path[time]
 
-                    scope_map = self.define_scope(paths, time, agent_1, scope_rad=2)
+                    scope_map = self.define_scope(paths, time, agent_1)
                     agents_in_scope = self.detect_agent_in_scope(agent_1, scope_map, time)
                     for agent_2 in agents_in_scope:
                         old_length_constraints = len(constraints)
@@ -152,9 +154,8 @@ class DistributedPlanningSolver(object):
 
         return h_values
 
-    def define_scope(self, result, timestep, agentID1, scope_rad=2):
+    def define_scope(self, result, timestep, agentID1):
         complete_map = [[0 if cell else 1 for cell in row] for row in self.my_map]
-        print(complete_map)
         center_row, center_col = agentID1.path[timestep]
 
         # Create a copy of the complete_map
@@ -164,9 +165,9 @@ class DistributedPlanningSolver(object):
         for i in range(len(complete_map)):
             for j in range(len(complete_map[i])):
                 distance = abs(center_row - i) + abs(center_col - j)  # Manhattan distance
-                if distance > scope_rad:
+                if distance > self.scope_rad:
                     scope_map[i][j] = 0
-                if distance <= scope_rad:
+                if distance <= self.scope_rad:
                     # Check for obstacles between current cell and center cell
                     no_obstacle = True
                     if i != center_row or j != center_col:  # Exclude center cell
@@ -243,13 +244,12 @@ class DistributedPlanningSolver(object):
                 #                     scope_map[i][j] = 0
                 # if complete_map[i][j] == 1:  # If it can see, check if there is a 0 in between the two
                 #     print(center_row, center_col)
-        print(scope_map)
         return scope_map
 
     def conflict(self, agent_1, agent_2, time, constraints):
         change = False
 
-        for i in range(1,20): # Communicate 3 time steps ahead
+        for i in range(1,self.steps_ahead): # Communicate 3 time steps ahead
             avoidance = False   # Check for avoidance for all 3 time steps
             timestep = time + i  # Timestep which is checked
 
@@ -440,19 +440,7 @@ class DistributedPlanningSolver(object):
         self.performance_system['average travel distance'] = self.performance_system['total distance traveled'] / len(result)
         self.performance_system['average conflicts'] = self.performance_system['total amount of conflicts'] * 2 / len(result) #times two because it is average amount of conflicts per agent
 
-
-        #CREATE HEAT MAP HERE
-        #map_01 = [[0 if cell else 1 for cell in row] for row in self.my_map]
-        #for agent_path in result:
-
-
-        #print(self.conflict_agents)
-        #print(self.performance_agents)
-        #print(self.performance_system)
-
     def visualize_performance(self, performance_agents, performance_system):
-        # Heat map
-        # Graphs
         return None
 
 
