@@ -8,6 +8,7 @@ import seaborn as sns
 from math import *
 import os
 import scipy.stats as stats
+import pandas as pd
 
 class Analysis:
     def __init__(self, input_path, timeout_time, threshold_percent):
@@ -561,11 +562,31 @@ class Analysis:
                             S_plus = (mean_plus - mean) / dP
                             sensitivity[performance][parameter][method].append(S_plus)
 
-        #MAP THE PARAMETER SENSITIVITY OUT IN A COLOUR TABLE
-
         print('For dP = ', dP, ' sensitivity dictionary is ', sensitivity)
 
-        return sensitivity # = { performance_indicator: { parameter: { method: [mean, S_min, S_plus] } } }
+        print("DUMPING LOCAL SENSITIVITY DATA...")
+
+        extracted_data = []
+        for category, subcategories in sensitivity.items():
+            for subcategory, methods in subcategories.items():
+                for method, values in methods.items():
+                    # Only select the second (S^-) and third (S^+) values
+                    s_minus, s_plus = values[1:3]
+                    extracted_data.append({
+                        'Performance indicator': category,
+                        'Parameter': subcategory,
+                        'Method': method,
+                        'S-': s_minus,
+                        'S+': s_plus
+                    })
+
+        df = pd.DataFrame(extracted_data)
+        df.to_excel('Local_sensitivity.xlsx', engine='openpyxl', index=False)
+        print("LOCAL SENSITIVITY DATA SAVED IN Local_sensitivity.xlsx...")
+
+        return df
+
+
 
 map1_analysis = Analysis(input_path='instances\\map1.txt', timeout_time=2, threshold_percent=30)
 map2=_analysis = Analysis(input_path='instances\\map2.txt', timeout_time=2, threshold_percent=30)
@@ -585,8 +606,9 @@ OPTIONS FOR SENSITIVITY PARAMETERS: ['Scope', 'Agents', 'Steps ahead']
 #map1_analysis.compare_performance_extension(agent_generator='left-right', num_agents=8, performance_indicator='total time', \
 #                                          methods2compare=['Implicit', 'Explicit', 'Random'], steps_ahead=20, scope_rad=2)
 
-map1_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6, performance_indicators=['total time'], \
-                                          methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False, steps_ahead=20, scope_rad=4, \
-                                         dP=0.2, parameters=['Steps ahead'])
+map1_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6, performance_indicators=['total time', \
+                                                    'total distance traveled', 'total amount of conflicts'], \
+                                          methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False, steps_ahead=20, scope_rad=2, \
+                                         dP=0.2, parameters=['Agents'])
 
 
