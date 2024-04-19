@@ -88,7 +88,7 @@ class DistributedPlanningSolver(object):
                     for agent_2 in agents_in_scope:
                         old_length_constraints = len(constraints)
                         if self.method == "Random" or self.method == "Explicit" or self.method == "Implicit":
-                            constraints, change_curr = self.conflict(agent_1, agent_2, time, constraints, self.log_file)
+                            constraints, change_curr = self.conflict(agent_1, agent_2, time, constraints)
                             if len(constraints) != old_length_constraints: #this part is needed for the conflict performance indicators
                                 #print("CONFLICT DETECTED BETWEEN AGENT", agent_1.id, "and", agent_2.id)
                                 self.conflict_agents[agent_1.id] += 1
@@ -188,7 +188,7 @@ class DistributedPlanningSolver(object):
 
         return scope_map
 
-    def conflict(self, agent_1, agent_2, time, constraints, log_file):
+    def conflict(self, agent_1, agent_2, time, constraints):
         change = False
 
         for i in range(1,self.steps_ahead): # Communicate 3 time steps ahead

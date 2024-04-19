@@ -483,7 +483,7 @@ class Analysis:
 
 
     def local_sensitivity_analysis(self, agent_generator, num_agents, performance_indicators, methods2compare, add_on, \
-                                    steps_ahead, scope_rad, dP, parameters):
+                                    steps_ahead, scope_rad, dP, parameters,map):
         steps_ahead_min = int(floor(steps_ahead - dP * steps_ahead))
         steps_ahead_plus = int(ceil(steps_ahead + dP * steps_ahead))
 
@@ -581,7 +581,7 @@ class Analysis:
                     })
 
         df = pd.DataFrame(extracted_data)
-        df.to_excel('Local_sensitivity.xlsx', engine='openpyxl', index=False)
+        df.to_excel(f'Local_sensitivity_{parameter,map}.xlsx', engine='openpyxl', index=False)
         print("LOCAL SENSITIVITY DATA SAVED IN Local_sensitivity.xlsx...")
 
         return df
@@ -589,7 +589,7 @@ class Analysis:
 
 
 map1_analysis = Analysis(input_path='instances\\map1.txt', timeout_time=2, threshold_percent=30)
-map2=_analysis = Analysis(input_path='instances\\map2.txt', timeout_time=2, threshold_percent=30)
+map2_analysis = Analysis(input_path='instances\\map2.txt', timeout_time=2, threshold_percent=30)
 map3_analysis = Analysis(input_path='instances\\map3.txt', timeout_time=2, threshold_percent=30)
 
 '''
@@ -606,9 +606,34 @@ OPTIONS FOR SENSITIVITY PARAMETERS: ['Scope', 'Agents', 'Steps ahead']
 #map1_analysis.compare_performance_extension(agent_generator='left-right', num_agents=8, performance_indicator='total time', \
 #                                          methods2compare=['Implicit', 'Explicit', 'Random'], steps_ahead=20, scope_rad=2)
 
-map1_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6, performance_indicators=['total time', \
-                                                    'total distance traveled', 'total amount of conflicts'], \
-                                          methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False, steps_ahead=20, scope_rad=2, \
-                                         dP=0.2, parameters=['Agents'])
 
 
+lst_parameters = ['Scope', 'Agents', 'Steps ahead']
+lst_maps_analysis = [map1_analysis, map2_analysis, map3_analysis]
+
+# for i in lst_parameters:
+#     map1_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6,\
+#                                              performance_indicators=['total time', \
+#                                                                      'total distance traveled',\
+#                                                                      'total amount of conflicts'], \
+#                                              methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
+#                                              steps_ahead=12, scope_rad=2, \
+#                                              dP=0.2, parameters=[i],map='map1')
+
+# for i in lst_parameters:
+#     map2_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6,\
+#                                              performance_indicators=['total time', \
+#                                                                      'total distance traveled',\
+#                                                                      'total amount of conflicts'], \
+#                                              methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
+#                                              steps_ahead=12, scope_rad=2, \
+#                                              dP=0.2, parameters=[i],map='map2')
+
+for i in lst_parameters:
+    map3_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6,\
+                                             performance_indicators=['total time', \
+                                                                     'total distance traveled',\
+                                                                     'total amount of conflicts'], \
+                                             methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
+                                             steps_ahead=12, scope_rad=2, \
+                                             dP=0.2, parameters=[i],map='map3')
