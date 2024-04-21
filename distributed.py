@@ -78,7 +78,6 @@ class DistributedPlanningSolver(object):
                 change_check = []
 
                 for agent_1 in self.distributed_agents:
-                    # if agent_1 not in arrived:
                     if time >= len(agent_1.path):
                         agent_1.path.append(agent_1.path[-1])
                     agent_1.start = agent_1.path[time]
@@ -89,8 +88,7 @@ class DistributedPlanningSolver(object):
                         old_length_constraints = len(constraints)
                         if self.method == "Random" or self.method == "Explicit" or self.method == "Implicit":
                             constraints, change_curr = self.conflict(agent_1, agent_2, time, constraints)
-                            if len(constraints) != old_length_constraints: #this part is needed for the conflict performance indicators
-                                #print("CONFLICT DETECTED BETWEEN AGENT", agent_1.id, "and", agent_2.id)
+                            if len(constraints) != old_length_constraints:
                                 self.conflict_agents[agent_1.id] += 1
                                 self.conflict_agents[agent_2.id] += 1
                             change_check.append(change_curr)
@@ -117,7 +115,7 @@ class DistributedPlanningSolver(object):
         self.performance(result)
         self.visualize_performance(self.performance_agents, self.performance_system)
 
-        return result  # Hint: this should be the final result of the distributed planning (visualization is done after planning)
+        return result
     def weighted_h_values(self, h_values):
         '''
         function that takes all initial paths found, finds conficts.
@@ -130,7 +128,6 @@ class DistributedPlanningSolver(object):
         # while not all agents have reached their target
         while len(arrived) < len(self.distributed_agents):
             for agent_1 in self.distributed_agents:
-                # if agent_1 not in arrived:
                 if time >= len(agent_1.path):
                     agent_1.path.append(agent_1.path[-1])
 
@@ -140,14 +137,10 @@ class DistributedPlanningSolver(object):
                         agent_2.path.append(agent_2.path[-1])
 
                     if agent_1 != agent_2 and agent_1.path[time] == agent_2.path[time]:
-                        # print("Collision found in initial at", time, "on", agent_1.path[time], "between", agent_1, agent_2)
                         agent_1.heuristics[agent_1.path[time]] += 1
-                        # agent_2.heuristics[agent_2.path[time]] += 1
 
                     elif (agent_1.path[time] == agent_2.path[time-1] and agent_1.path[time-1] == agent_2.path[time]) and time !=0 :
-                        # print("Collision found in initial at", time, "on", agent_1.path[time], "between", agent_1, agent_2)
                         agent_1.heuristics[agent_1.path[time]] += 1
-                        # agent_2.heuristics[agent_2.path[time]] += 1
 
                 if agent_1.path[time] == agent_1.goal and agent_1 not in arrived:
                     arrived.append(agent_1)
@@ -166,7 +159,7 @@ class DistributedPlanningSolver(object):
         # Iterate over the cells and set values based on the scope_rad
         for i in range(len(complete_map)):
             for j in range(len(complete_map[i])):
-                distance = abs(center_row - i) + abs(center_col - j)  # Manhattan distance
+                distance = abs(center_row - i) + abs(center_col - j)
                 if distance > self.scope_rad:
                     scope_map[i][j] = 0
                 if distance <= self.scope_rad:
@@ -260,14 +253,14 @@ class DistributedPlanningSolver(object):
                                 if constraint not in constraints:
                                     constraints.append(constraint)
                             change = True
-                            # log_file.write("Conflict between" + str(agent_1.id) +"(random value:" + str(agent_1.random) + ") and"+ str(agent_2.id)+ "(random value:"+ str(agent_2.random) + ") Resolved by priority to "+ str(agent_1.id)+ '\n')
+
                         else:
                             agent_1.path = agent_1.path[:time] + path_1
                             for constraint in constraint_temp_1:
                                 if constraint not in constraints:
                                     constraints.append(constraint)
                             change = True
-                            # log_file.write("Conflict between" + str(agent_1.id) +"(random value:" + str(agent_1.random) + ") and"+ str(agent_2.id)+ "(random value:"+ str(agent_2.random) + ") Resolved by priority to "+ str(agent_2.id)+ '\n')
+
                     elif self.method == 'Explicit':
                         if len(path_1) >= len(path_2): # Agent with longest detour receives priority
                             agent_2.path = agent_2.path[:time] + path_2
@@ -275,18 +268,14 @@ class DistributedPlanningSolver(object):
                                 if constraint not in constraints:
                                     constraints.append(constraint)
                             change = True
-                            # log_file.write("Conflict between" + str(agent_1.id) + "(path length:" + str(len(
-                            #     path_1)) + ") and" + str(agent_2.id) + "(path length:" + str(
-                            #     len(path_2)) + ") Resolved by priority to " + str(agent_1.id) + '\n')
+
                         else:
                             agent_1.path = agent_1.path[:time] + path_1
                             for constraint in constraint_temp_1:
                                 if constraint not in constraints:
                                     constraints.append(constraint)
                             change = True
-                            # log_file.write("Conflict between" + str(agent_1.id) + "(path length:" + str(len(
-                            #     path_1)) + ") and" + str(agent_2.id) + "(path length:" + str(len(
-                            #     path_2)) + ") Resolved by priority to " + str(agent_2.id) + '\n')
+
                     elif self.method == 'Implicit':
                         if agent_1.id > agent_2.id and (agent_2.path.count(agent_2.path[time]) <= 4 and agent_2.path[
                             time] != agent_2.goal):  # Agent with  highest agent id has priority
@@ -294,37 +283,29 @@ class DistributedPlanningSolver(object):
                             for constraint in constraint_temp_2:
                                 if constraint not in constraints:
                                     constraints.append(constraint)
-                            prioritized_agent = agent_1.id
                             change = True
-                            # log_file.write("Conflict between" + str(agent_1.id) + "and" + str(agent_2.id) +  "Resolved by priority to " + str(agent_1.id) + '\n')
+
                         elif agent_2.id > agent_1.id and (
                                 agent_1.path.count(agent_1.path[time]) <= 4 and agent_1.path[time] != agent_1.goal):
                             agent_1.path = agent_1.path[:time] + path_1
                             for constraint in constraint_temp_1:
                                 if constraint not in constraints:
                                     constraints.append(constraint)
-                            prioritized_agent = agent_2.id
                             change = True
-                            # log_file.write("Conflict between" + str(agent_1.id) + "and" + str(
-                            #     agent_2.id) + "Resolved by priority to " + str(agent_2.id) + '\n')
+
                         elif agent_2.path.count(agent_2.path[time]) > 4 and agent_2.path[time] != agent_2.goal:
                             agent_1.path = agent_1.path[:time] + path_1
                             for constraint in constraint_temp_1:
                                 if constraint not in constraints:
                                     constraints.append(constraint)
-                            prioritized_agent = agent_2.id
                             change = True
-                            # log_file.write("Conflict between" + str(agent_1.id) + "and" + str(
-                            #     agent_2.id) + "Resolved by priority to " + str(agent_2.id) + '\n')
+
                         elif agent_1.path.count(agent_1.path[time]) > 4 and agent_1.path[time] != agent_1.goal:
                             agent_2.path = agent_2.path[:time] + path_2
                             for constraint in constraint_temp_2:
                                 if constraint not in constraints:
                                     constraints.append(constraint)
-                            prioritized_agent = agent_1.id
                             change = True
-                            # log_file.write("Conflict between" + str(agent_1.id) + "and" + str(
-                            #     agent_2.id) + "Resolved by priority to " + str(agent_1.id) + '\n')
 
                 else:   # No collision occurs at timestep
                     avoidance = True
@@ -361,14 +342,14 @@ class DistributedPlanningSolver(object):
                     if agent_path[i] != agent_path[i - 1]:
                         break
                 agent_path = agent_path[:i+1]
-            travel_times[agent.id] = len(agent_path) - 1 #fill in travel_times dictionary needed for system wide performance indicators
+            travel_times[agent.id] = len(agent_path) - 1
 
             pops = []
             for i in range(len(agent_path)-1):
                 if agent_path[i] == agent_path[i+1]:
                     pops.append(i)
             agent_path_no_waiting = [location for idx, location in enumerate(agent_path) if idx not in pops]
-            distances[agent.id] = len(agent_path_no_waiting) - 1 #fill in distances dictionary needed for system wide performance indicators
+            distances[agent.id] = len(agent_path_no_waiting) - 1
 
             #Fill in the performance indicator dictionary per agent
             performance_per_agent['travel distance / shortest distance'] = (len(agent_path_no_waiting) - 1) / (len(set(self.initial_paths[agent.id])) - 1)
@@ -376,7 +357,7 @@ class DistributedPlanningSolver(object):
             performance_per_agent['#conflicts / travel time'] =  self.conflict_agents[agent.id] / travel_times[agent.id]
             self.performance_agents[agent.id] = performance_per_agent
 
-            self.performance_system['agent paths with waiting'].append(agent_path) #this has to be done this way for the heat map later on
+            self.performance_system['agent paths with waiting'].append(agent_path)
 
         #SYSTEM-WIDE INDICATORS
         self.performance_system['maximum time'] = max([value for key, value in travel_times.items()]) #this is the time in which all agents have reached their destination

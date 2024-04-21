@@ -14,16 +14,16 @@ from scipy.stats import spearmanr
 
 class Analysis:
     def __init__(self, input_path, timeout_time, threshold_percent):
-        self.input_path = input_path #e.g. 'instances\\map1.txt'
-        self.timeout_time = timeout_time #amount of time to wait before calling an infinite loop when finding a solution
+        self.input_path = input_path # e.g. 'instances\\map1.txt'
+        self.timeout_time = timeout_time # amount of time to wait before calling an infinite loop when finding a solution
         self.output_path = 'instances\\Output_generator.txt'
         self.threshold_percent = threshold_percent
 
 
-    def f(self, solver): #needed for find_solution()
+    def f(self, solver): # needed for find_solution()
         return solver.find_solution()
 
-    def run_with_timeout(self, func, args, timeout, seed_number): #needed for find_solution()
+    def run_with_timeout(self, func, args, timeout, seed_number): # needed for find_solution()
         global inf_loop
         executor = concurrent.futures.ThreadPoolExecutor()
 
@@ -337,7 +337,8 @@ class Analysis:
                 analysis = self.find_solutions(agent_generator=agent_generator, num_agents=num_agents, \
                                                amount_of_simulations=amount_of_simulations, method=method, add_on=add_on,
                                                steps_ahead=steps_ahead, scope_rad=scope_rad, comparison=True)
-                #with comparison=True only one simulation is done everytime in this loop, saving time when running this while loop
+
+                # with comparison=True only one simulation is done everytime in this loop, saving time when running this while loop
                 for system_performance in analysis['system performance per sim']:
                     if system_performance is not None: #do not take performance into account of a failed simulation
                         result_method.append(system_performance[performance_indicator])
@@ -470,9 +471,7 @@ class Analysis:
 
     def create_heat_map(self, agent_generator, num_agents, method, title_heat_map, waiting_cells, \
                         add_on, steps_ahead, scope_rad):
-
-        #################WITH CONVERGENCE######################
-
+        # Including convergence
         cv_values = []
         cv_has_converged = False
         amount_of_simulations = 1
@@ -490,7 +489,7 @@ class Analysis:
                         if waiting_cells == False:  # if we want to see where every agent passes
                             for cell in path:
                                 heat_map[cell[0]][cell[1]] += (
-                                            1 / amount_of_simulations)  # normalize with amount of simulations to get an understandable result
+                                            1 / amount_of_simulations)  # normalize with amount of simulations
                         else:
                             cell_prev = 0
                             for cell in path:
@@ -499,7 +498,7 @@ class Analysis:
                                 if cell == cell_prev and cell != path[
                                     0]:  # if agent has to wait, then the heat map gets hotter
                                     heat_map[cell[0]][cell[1]] += (
-                                                1 / amount_of_simulations)  # normalize with amount of simulations to get an understandable result
+                                                1 / amount_of_simulations)  # normalize with amount of simulations
                                 cell_prev = cell
 
             std_dev = np.nanstd(heat_map)
@@ -655,11 +654,6 @@ class Analysis:
         lhs_1 = np.random.uniform(ranges[0][0], ranges[0][1]+1, n_samples)
         lhs_2 = np.random.uniform(ranges[1][0], ranges[1][1]+1, n_samples)
 
-        # # Create a dataframe to store the parameter combinations: LHS
-        # param_df = pd.DataFrame({parameters[0]: lhs_1, parameters[1]: lhs_2})
-        # param_df = round(param_df,0)
-        # param_df = param_df.astype(int)
-
         # Create a dataframe to store the parameter combinations: Sampling
         par_1 = np.arange(ranges[0][0], ranges[0][1]+1, 1)
         par_2 = np.arange(ranges[1][0], ranges[1][1]+1, 1)
@@ -669,8 +663,6 @@ class Analysis:
             for j in par_2:
                 combination = pd.DataFrame([{parameters[0]: i, parameters[1]: j}])
                 param_df = pd.concat([param_df, pd.DataFrame(combination)], ignore_index=True)
-
-        print(param_df)
 
         # Initialize lists to store the results
         correlation_coefficients = []
@@ -716,7 +708,7 @@ class Analysis:
                                                add_on=add_on,
                                                steps_ahead=steps_ahead, scope_rad=scope_rad, comparison=True)
                 success += analysis['success rate']
-                # print('NO. SIMS', amount_of_simulations, len(analysis['system performance per sim']))
+
                 # with comparison=True only one simulation is done everytime in this loop, saving time when running this while loop
 
                 for system_performance in analysis['system performance per sim']:
@@ -735,14 +727,8 @@ class Analysis:
                     break
                 amount_of_simulations += 1
 
-            # analysis = self.find_solutions(agent_generator=agent_generator, num_agents=num_agents, \
-            #                                    amount_of_simulations=amount_of_simulations, method=method,
-            #                                    add_on=add_on,
-            #                                    steps_ahead=steps_ahead, scope_rad=scope_rad, comparison=False)
-
             if analysis['success rate'] == 0.0 or cv_has_converged == False:
                 param_df.drop(i, inplace=True)
-                print(param_df)
                 continue
 
             if analysis['system performance per sim'] is not None:
@@ -752,19 +738,10 @@ class Analysis:
                 performance[str(parameters[0])] = self.param1
                 performance[str(parameters[1])] = self.param2
                 df = pd.concat([df, performance], ignore_index=True)
-                print('DF', df)
 
-
-        # results = pd.DataFrame(columns=df.columns, data=data)
-        # results.drop(columns=[str(parameters[0]), str(parameters[1])], inplace=True)
         results = df
 
-        print(results)
         CV = pd.DataFrame(cv_values)
-        # CV.to_excel(f'CV_{parameters[0]}_{parameters[1]}.xlsx')
-        # Perform correlation analysis for each output variable
-        # corr_coef, p_val = spearmanr(results[performance_indicator], param_df.values)
-        # partial_corr = pg.partial_corr(data=results[performance_indicator], x=parameters[0], y=parameters[1], covar='average travel time', method='spearman')['r']
 
         for output_var in results.columns:
             print('OUTPUT', output_var)
@@ -798,9 +775,6 @@ class Analysis:
         print('DONE')
         return sensitivity_results, results
 
-# 'success rate': 0, 'system performance per sim': []
-# agent_generator, num_agents, amount_of_simulations, method, add_on, steps_ahead, scope_rad
-
 
 map1_analysis = Analysis(input_path='instances\\map1.txt', timeout_time=2, threshold_percent=30)
 map2_analysis = Analysis(input_path='instances\\map2.txt', timeout_time=2, threshold_percent=30)
@@ -814,17 +788,6 @@ OPTIONS FOR SENSITIVITY PARAMETERS: ['Scope', 'Agents', 'Steps ahead']
 
 '''
 
-#map1_analysis.compare_performance_methods(agent_generator='left-right', num_agents=5, performance_indicator='total time', \
-#                                          methods2compare=['Implicit', 'Explicit', 'Random'], steps_ahead=20, scope_rad=2, add_on=False)
-
-#map1_analysis.compare_performance_extension(agent_generator='left-right', num_agents=8, performance_indicator='total time', \
-#                                          methods2compare=['Implicit', 'Explicit', 'Random'], steps_ahead=20, scope_rad=2)
-#
-# map1_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6, performance_indicators=['total time', \
-#                                                     'total distance traveled', 'total amount of conflicts'], \
-#                                           methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False, steps_ahead=20, scope_rad=2, \
-#                                          dP=0.2, parameters=['Agents'])
-
 
 lst_parameters = ['Scope', 'Agents', 'Steps ahead']
 lst_maps_analysis = [map1_analysis, map2_analysis, map3_analysis]
@@ -837,8 +800,6 @@ for i in lst_parameters:
                                              steps_ahead=12, scope_rad=2, \
                                              dP=0.2, parameters=[i],map='map1')
 
-# print(map1_analysis.global_sensitivity(['scope_rad', 'num_agents'], [[2,6], [2,8]]), map1_analysis.global_sensitivity(['scope_rad', 'steps_ahead'], [[2,6], [8,15]]), map1_analysis.global_sensitivity(['steps_ahead', 'num_agents'], [[8,15], [2,8]]))
-print(map1_analysis.global_sensitivity(['steps_ahead', 'num_agents'], [[8,15], [2,8]]))
 for i in lst_parameters:
     map2_analysis.local_sensitivity_analysis(agent_generator='left-right', num_agents=4,\
                                              performance_indicators=['average travel time',
