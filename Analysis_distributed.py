@@ -470,44 +470,31 @@ class Analysis:
 
 
     def create_heat_map(self, agent_generator, num_agents, method, title_heat_map, waiting_cells, \
-                        add_on, steps_ahead, scope_rad):
-        # Including convergence
-        cv_values = []
-        cv_has_converged = False
-        amount_of_simulations = 1
-        while cv_has_converged is False or amount_of_simulations < 10:  # minimum of X simulations tried
-            print("Current simulation number: ", amount_of_simulations)
-            analysis, my_map = self.find_solutions(agent_generator=agent_generator, num_agents=num_agents, \
-                                                   amount_of_simulations=amount_of_simulations, add_on=add_on,
-                                                   steps_ahead=steps_ahead,
-                                                   scope_rad=scope_rad, method=method, heat_map=True)
-            heat_map = [[np.nan if cell else 0 for cell in row] for row in my_map]
-            for perf_dict in analysis['system performance per sim']:
-                if perf_dict is not None:
-                    paths = perf_dict['agent paths with waiting']
-                    for path in paths:
-                        if waiting_cells == False:  # if we want to see where every agent passes
-                            for cell in path:
+                        add_on, steps_ahead, scope_rad, amount_of_simulations):
+
+        analysis, my_map = self.find_solutions(agent_generator=agent_generator, num_agents=num_agents, \
+                                               amount_of_simulations=amount_of_simulations, add_on=add_on,
+                                               steps_ahead=steps_ahead,
+                                               scope_rad=scope_rad, method=method, heat_map=True)
+        heat_map = [[np.nan if cell else 0 for cell in row] for row in my_map]
+        for perf_dict in analysis['system performance per sim']:
+            if perf_dict is not None:
+                paths = perf_dict['agent paths with waiting']
+                for path in paths:
+                    if waiting_cells == False:  # if we want to see where every agent passes
+                        for cell in path:
+                            heat_map[cell[0]][cell[1]] += (
+                                        1 / amount_of_simulations)  # normalize with amount of simulations
+                    else:
+                        cell_prev = 0
+                        for cell in path:
+                            if cell == path[-1]:
+                                break
+                            if cell == cell_prev and cell != path[
+                                0]:  # if agent has to wait, then the heat map gets hotter
                                 heat_map[cell[0]][cell[1]] += (
                                             1 / amount_of_simulations)  # normalize with amount of simulations
-                        else:
-                            cell_prev = 0
-                            for cell in path:
-                                if cell == path[-1]:
-                                    break
-                                if cell == cell_prev and cell != path[
-                                    0]:  # if agent has to wait, then the heat map gets hotter
-                                    heat_map[cell[0]][cell[1]] += (
-                                                1 / amount_of_simulations)  # normalize with amount of simulations
-                                cell_prev = cell
-
-            std_dev = np.nanstd(heat_map)
-            mean = np.nanmean(heat_map)
-            cv = std_dev / mean if mean != 0 else float('inf')
-            print("CV: ", cv)
-            cv_values.append(cv)
-            cv_has_converged = self.has_converged(values=cv_values, window_size=3, min_consecutive_windows=2)
-            amount_of_simulations += 1
+                            cell_prev = cell
 
         # Create the heatmap
         plt.figure(figsize=(12, 8))
@@ -522,15 +509,6 @@ class Analysis:
         plt.close()  # Close the figure after saving
         print(f"Graph saved as {filename}")
         print('Stop manually!')
-
-        #Create heat map coefficient of variation plot
-        plt.figure(figsize=(10, 5))
-        plt.plot(cv_values, marker='o', linestyle='-', color='b')
-        plt.title('Heat map coefficient of variation')
-        plt.xlabel('Number of Simulations')
-        plt.ylabel('CV')
-        plt.grid(True)  # Turn on the grid
-        plt.show()
 
         return heat_map
 
@@ -788,30 +766,6 @@ OPTIONS FOR SENSITIVITY PARAMETERS: ['Scope', 'Agents', 'Steps ahead']
 
 '''
 
-
+lst_indicators = ['maximum time', 'total time', 'total distance traveled', 'total amount of conflicts', 'average travel time', 'average travel distance', 'average conflicts']
 lst_parameters = ['Scope', 'Agents', 'Steps ahead']
 lst_maps_analysis = [map1_analysis, map2_analysis, map3_analysis]
-
-for i in lst_parameters:
-    map1_analysis.local_sensitivity_analysis(agent_generator='left-right', num_agents=4,\
-                                             performance_indicators=['average travel time',
-'average travel distance', 'average conflicts'], \
-                                             methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
-                                             steps_ahead=12, scope_rad=2, \
-                                             dP=0.2, parameters=[i],map='map1')
-
-for i in lst_parameters:
-    map2_analysis.local_sensitivity_analysis(agent_generator='left-right', num_agents=4,\
-                                             performance_indicators=['average travel time',
-'average travel distance', 'average conflicts'], \
-                                             methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
-                                             steps_ahead=12, scope_rad=2, \
-                                             dP=0.2, parameters=[i],map='map2')
-
-for i in lst_parameters:
-    map3_analysis.local_sensitivity_analysis(agent_generator='left-right', num_agents=4,\
-                                             performance_indicators=['average travel time',
-'average travel distance', 'average conflicts'], \
-                                             methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
-                                             steps_ahead=12, scope_rad=2, \
-                                             dP=0.2, parameters=[i],map='map3')

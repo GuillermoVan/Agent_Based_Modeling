@@ -18,10 +18,10 @@ from single_agent_planner import get_sum_of_cost
 
 SOLVER = "Distributed"
 
-method = "Explicit"
-add_on = True
-steps_ahead = 20
-scope_rad = 2
+method = "Explicit" #Choose the distributed planning method. Options: 'Explicit', 'Random', 'Implicit'
+add_on = True #Choose if you want to add the Crowded Area Avoidance Add-On to the simulation
+steps_ahead = 20 #Choose the parameter for the number of steps communicated between agents when in each other's scope
+scope_rad = 2 #Choose the radius of the agents' scope
 
 def print_mapf_instance(my_map, starts, goals):
     """
@@ -150,7 +150,7 @@ if __name__ == '__main__':
             paths = solver.find_solution()
         elif args.solver == "Distributed":  # Wrapper of distributed planning solver class
             print("***Run Distributed Planning***")
-            solver = DistributedPlanningSolver(my_map, starts, goals, method, add_on, steps_ahead, scope_rad, log_file) #!!!TODO: add your own distributed planning implementation here.
+            solver = DistributedPlanningSolver(my_map, starts, goals, method, add_on, steps_ahead, scope_rad) #!!!TODO: add your own distributed planning implementation here.
             paths = solver.find_solution()
         else: 
             raise RuntimeError("Unknown solver!")
