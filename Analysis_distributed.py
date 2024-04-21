@@ -581,7 +581,7 @@ class Analysis:
                     })
 
         df = pd.DataFrame(extracted_data)
-        df.to_excel(f'Local_sensitivity_{parameter,map}.xlsx', engine='openpyxl', index=False)
+        df.to_excel(f'Local_sensitivity_3{parameter,map}.xlsx', engine='openpyxl', index=False)
         print("LOCAL SENSITIVITY DATA SAVED IN Local_sensitivity.xlsx...")
 
         return df
@@ -611,29 +611,26 @@ OPTIONS FOR SENSITIVITY PARAMETERS: ['Scope', 'Agents', 'Steps ahead']
 lst_parameters = ['Scope', 'Agents', 'Steps ahead']
 lst_maps_analysis = [map1_analysis, map2_analysis, map3_analysis]
 
-# for i in lst_parameters:
-#     map1_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6,\
-#                                              performance_indicators=['total time', \
-#                                                                      'total distance traveled',\
-#                                                                      'total amount of conflicts'], \
-#                                              methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
-#                                              steps_ahead=12, scope_rad=2, \
-#                                              dP=0.2, parameters=[i],map='map1')
-
-# for i in lst_parameters:
-#     map2_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6,\
-#                                              performance_indicators=['total time', \
-#                                                                      'total distance traveled',\
-#                                                                      'total amount of conflicts'], \
-#                                              methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
-#                                              steps_ahead=12, scope_rad=2, \
-#                                              dP=0.2, parameters=[i],map='map2')
+for i in lst_parameters:
+    map1_analysis.local_sensitivity_analysis(agent_generator='left-right', num_agents=4,\
+                                             performance_indicators=['average travel time',
+'average travel distance', 'average conflicts'], \
+                                             methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
+                                             steps_ahead=12, scope_rad=2, \
+                                             dP=0.2, parameters=[i],map='map1')
 
 for i in lst_parameters:
-    map3_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6,\
-                                             performance_indicators=['total time', \
-                                                                     'total distance traveled',\
-                                                                     'total amount of conflicts'], \
+    map2_analysis.local_sensitivity_analysis(agent_generator='left-right', num_agents=4,\
+                                             performance_indicators=['average travel time',
+'average travel distance', 'average conflicts'], \
+                                             methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
+                                             steps_ahead=12, scope_rad=2, \
+                                             dP=0.2, parameters=[i],map='map2')
+
+for i in lst_parameters:
+    map3_analysis.local_sensitivity_analysis(agent_generator='left-right', num_agents=4,\
+                                             performance_indicators=['average travel time',
+'average travel distance', 'average conflicts'], \
                                              methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
                                              steps_ahead=12, scope_rad=2, \
                                              dP=0.2, parameters=[i],map='map3')
