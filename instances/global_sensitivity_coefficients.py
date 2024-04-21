@@ -12,18 +12,18 @@ import pandas as pd
 import pingouin as pg
 from scipy.stats import spearmanr
 
+
 class Analysis:
     def __init__(self, input_path, timeout_time, threshold_percent):
-        self.input_path = input_path #e.g. 'instances\\map1.txt'
-        self.timeout_time = timeout_time #amount of time to wait before calling an infinite loop when finding a solution
+        self.input_path = input_path  # e.g. 'instances\\map1.txt'
+        self.timeout_time = timeout_time  # amount of time to wait before calling an infinite loop when finding a solution
         self.output_path = 'instances\\Output_generator.txt'
         self.threshold_percent = threshold_percent
 
-
-    def f(self, solver): #needed for find_solution()
+    def f(self, solver):  # needed for find_solution()
         return solver.find_solution()
 
-    def run_with_timeout(self, func, args, timeout, seed_number): #needed for find_solution()
+    def run_with_timeout(self, func, args, timeout, seed_number):  # needed for find_solution()
         global inf_loop
         executor = concurrent.futures.ThreadPoolExecutor()
 
@@ -43,19 +43,19 @@ class Analysis:
         # Return None to indicate failure or timeout
         return None
 
-    def has_converged(self, values, window_size, min_consecutive_windows): #needed for compare_performance_methods()
+    def has_converged(self, values, window_size, min_consecutive_windows):  # needed for compare_performance_methods()
         if len(values) < window_size:
             return False
         averages = [sum(values[i:i + window_size]) / window_size for i in range(len(values) - window_size + 1)]
         consecutive_below_threshold = 0
         for i in range(1, len(averages)):
-            if averages[i-1] == 0:
+            if averages[i - 1] == 0:
                 if averages[i] != 0:
                     consecutive_below_threshold = 0
                 else:
                     consecutive_below_threshold += 1
             else:
-                relative_change = abs((averages[i] - averages[i-1]) / averages[i-1])
+                relative_change = abs((averages[i] - averages[i - 1]) / averages[i - 1])
                 if relative_change <= self.threshold_percent / 100.0:
                     consecutive_below_threshold += 1
                 else:
@@ -75,15 +75,18 @@ class Analysis:
 
                 map_content = [[cell for cell in line.strip() if cell in ".@"] for line in lines[1:1 + num_rows]]
 
-                blocked_positions = set((x, y) for y, row in enumerate(map_content) for x, cell in enumerate(row) if cell == "@")
+                blocked_positions = set(
+                    (x, y) for y, row in enumerate(map_content) for x, cell in enumerate(row) if cell == "@")
 
                 # Define specific rows for start/end locations
                 top_rows = [1, 2]
                 bottom_rows = [num_rows - 2, num_rows - 3]
 
                 # Filter out positions based on rows and blocked positions
-                top_positions = [(x, y) for y in top_rows for x in range(num_columns) if (x, y) not in blocked_positions]
-                bottom_positions = [(x, y) for y in bottom_rows for x in range(num_columns) if (x, y) not in blocked_positions]
+                top_positions = [(x, y) for y in top_rows for x in range(num_columns) if
+                                 (x, y) not in blocked_positions]
+                bottom_positions = [(x, y) for y in bottom_rows for x in range(num_columns) if
+                                    (x, y) not in blocked_positions]
 
                 # Check if there are enough positions for half the agents on each side
                 half_agents = num_agents // 2
@@ -95,7 +98,7 @@ class Analysis:
                 random.shuffle(top_positions)
                 random.shuffle(bottom_positions)
 
-                #Adjust output file from here
+                # Adjust output file from here
                 with open(self.output_path, 'w') as output_file:
                     output_file.write(f"{num_rows} {num_columns}\n")
 
@@ -121,7 +124,6 @@ class Analysis:
         except Exception as e:
             print(f"An error occurred: {str(e)}")
 
-
     def random_generate_agents_on_map(self, num_agents, seed_val):
         random.seed(seed_val)
 
@@ -133,13 +135,15 @@ class Analysis:
 
                 map_content = [[cell for cell in line.strip() if cell in ".@"] for line in lines[1:1 + num_rows]]
 
-                blocked_positions = set((x, y) for y, row in enumerate(map_content) for x, cell in enumerate(row) if cell == "@")
+                blocked_positions = set(
+                    (x, y) for y, row in enumerate(map_content) for x, cell in enumerate(row) if cell == "@")
 
-                available_positions = [(x, y) for x in range(num_columns) for y in range(num_rows) if (x, y) not in blocked_positions]
+                available_positions = [(x, y) for x in range(num_columns) for y in range(num_rows) if
+                                       (x, y) not in blocked_positions]
 
                 random.shuffle(available_positions)
 
-                #Adjust output file from here
+                # Adjust output file from here
                 with open(self.output_path, 'w') as output_file:
                     output_file.write(f"{num_rows} {num_columns}\n")
 
@@ -157,7 +161,6 @@ class Analysis:
 
         except Exception as e:
             print(f"An error occurred: {str(e)}")
-
 
     def left_right_generate_agents_on_map(self, num_agents, seed_val):
         random.seed(seed_val)
@@ -193,7 +196,7 @@ class Analysis:
                 random.shuffle(left_positions)
                 random.shuffle(right_positions)
 
-                #Adjust output file from here
+                # Adjust output file from here
                 with open(self.output_path, 'w') as output_file:
                     output_file.write(f"{num_rows} {num_columns}\n")
 
@@ -219,8 +222,7 @@ class Analysis:
         except Exception as e:
             print(f"An error occurred: {str(e)}")
 
-
-    def find_solutions(self, agent_generator, num_agents, amount_of_simulations, method, add_on, steps_ahead, scope_rad,\
+    def find_solutions(self, agent_generator, num_agents, amount_of_simulations, method, add_on, steps_ahead, scope_rad, \
                        comparison=False, heat_map=False):
 
         analysis = {'success rate': 0, 'system performance per sim': []}
@@ -234,7 +236,7 @@ class Analysis:
         else:
             start_amount = 1
 
-        for seed_number in range(start_amount, amount_of_simulations + 1):
+        for seed_number in range(start_amount, int(amount_of_simulations + 1)):
             print("current seed = ", seed_number)
             analysis['system performance per sim'].append(None)
             try:
@@ -252,9 +254,10 @@ class Analysis:
                 if paths is not None:
                     solutions += 1
                     print(seed_number, "HAS A SOLUTION!")
-                    analysis["system performance per sim"][-1] = solver.performance_system #if no solution found, performance dict = 0
+                    analysis["system performance per sim"][
+                        -1] = solver.performance_system  # if no solution found, performance dict = 0
 
-            except BaseException as e:  #Exception if no solution is found
+            except BaseException as e:  # Exception if no solution is found
                 no_solutions += 1
                 print(seed_number, "has no solution")
 
@@ -262,7 +265,7 @@ class Analysis:
         print(no_solutions, 'times of not finding a solution')
         print(inf_loop, 'times of infinite looping')
         print(solutions, 'solutions')
-        success_rate = solutions/(no_solutions + inf_loop + solutions) * 100
+        success_rate = solutions / (no_solutions + inf_loop + solutions) * 100
         print(success_rate, '% success rate')
         print('######### RESULTS ##########')
 
@@ -273,55 +276,30 @@ class Analysis:
         else:
             return analysis
 
-    def success_result(self, agent_generator, method, add_on, max_agents, amount_of_simulations, steps_ahead, scope_rad):
+    def success_plotter(self, agent_generator, method, add_on, max_agents, amount_of_simulations, title_success_plot,
+                        steps_ahead, scope_rad):
         success = []
-        num_agents_range = range(1,max_agents+1)
+        num_agents_range = range(1, max_agents + 1)
         for num_agents in num_agents_range:
             print("current number of agents = ", num_agents)
-            analysis = self.find_solutions(agent_generator = agent_generator, \
-                                  num_agents=num_agents, amount_of_simulations=amount_of_simulations, \
+            analysis = self.find_solutions(agent_generator=agent_generator, \
+                                           num_agents=num_agents, amount_of_simulations=amount_of_simulations, \
                                            method=method, add_on=add_on, steps_ahead=steps_ahead, scope_rad=scope_rad)
             success.append(analysis['success rate'])
 
-        return success
-
-    def success_plotter(self, agent_generator, max_agents, amount_of_simulations, steps_ahead, scope_rad):
-        success_output = {'Explicit': None, 'Random': None, 'Implicit': None}
-        for method in ['Explicit', 'Random', 'Implicit']:
-            print("This method's success rate is now being evaluated: ", method)
-            add_on = False
-            if 'add-on' in method:
-                add_on = True
-                method_name = method.replace(" with add-on", "")
-            else:
-                method_name = method
-            success = self.success_result(agent_generator=agent_generator, method=method_name, add_on=add_on,
-                                                    max_agents=max_agents, amount_of_simulations=amount_of_simulations, steps_ahead=steps_ahead,
-                                                    scope_rad=scope_rad)
-            success_output[method] = success
-
-        # Setting up the plot
-        print("DATA: ", success_output)
-
-        print("PLOTTING SUCCESS RATE FIGURE NOW")
         plt.figure(figsize=(10, 6))
-
-        # Plot each method's results with a distinct line
-        num_agents_range = range(1, max_agents + 1)
-        for method, successes in success_output.items():
-            plt.plot(num_agents_range, successes, marker='o', linestyle='-', label=method)
-
+        plt.plot(num_agents_range, success, marker='o', linestyle='-')
         plt.xlabel('Number of Agents')
         plt.ylabel('Success Rate')
         plt.title('Success Rate vs. Number of Agents')
         plt.grid(True)
-        plt.legend()  # Include a legend to differentiate the lines
-        print("SAVING SUCCESS RATE GRAPH")
-        plt.savefig(os.path.join('Graphs', 'success_rate_figure.png'))
-        print("CLOSE GRAPH TO OBTAIN DATA")
+
+        filename = os.path.join('Graphs', title_success_plot)
+        plt.savefig(filename)
+        plt.close()  # Close the figure after saving
+        print(f"Graph saved as {filename}")
         plt.show()
         return
-
 
     def compare_performance_methods(self, agent_generator, num_agents, performance_indicator, methods2compare, add_on, \
                                     steps_ahead, scope_rad, plotting=True):
@@ -333,13 +311,14 @@ class Analysis:
             amount_of_simulations = 1
             print("CURRENT METHOD = ", method)
             result_method = []
-            while cv_has_converged is False or amount_of_simulations < 10: #minimum of X simulations tried
+            while cv_has_converged is False or amount_of_simulations < 10:  # minimum of X simulations tried
                 analysis = self.find_solutions(agent_generator=agent_generator, num_agents=num_agents, \
-                                               amount_of_simulations=amount_of_simulations, method=method, add_on=add_on,
+                                               amount_of_simulations=amount_of_simulations, method=method,
+                                               add_on=add_on,
                                                steps_ahead=steps_ahead, scope_rad=scope_rad, comparison=True)
-                #with comparison=True only one simulation is done everytime in this loop, saving time when running this while loop
+                # with comparison=True only one simulation is done everytime in this loop, saving time when running this while loop
                 for system_performance in analysis['system performance per sim']:
-                    if system_performance is not None: #do not take performance into account of a failed simulation
+                    if system_performance is not None:  # do not take performance into account of a failed simulation
                         result_method.append(system_performance[performance_indicator])
 
                         std_dev = np.std(result_method)
@@ -347,22 +326,21 @@ class Analysis:
                         cv = std_dev / mean if mean != 0 else float('inf')
                         cv_values.append(cv)
                         cv_has_converged = self.has_converged(values=cv_values, window_size=3, \
-                                                         min_consecutive_windows=2) #set convergence determination parameters here
+                                                              min_consecutive_windows=2)  # set convergence determination parameters here
 
-                if amount_of_simulations == 30: #after X simulations it stops evaluating the performance for this method
+                if amount_of_simulations == 30:  # after X simulations it stops evaluating the performance for this method
                     print("COEFFICIENT OF VARIATION NOT ABLE TO CONVERGE FOR FOLLOWING METHOD: " + method)
                     break
                 amount_of_simulations += 1
             result[method] = [result_method, cv_values]
-
-
 
         print("CALCULATING SIGNIFICANCE...")
 
         significance = dict()
         for method1, group1 in result.items():
             for method2, group2 in result.items():
-                if method1 != method2 and (method1, method2) not in significance.keys() and (method2, method1) not in significance.keys():
+                if method1 != method2 and (method1, method2) not in significance.keys() and (
+                method2, method1) not in significance.keys():
                     t_stat, p_val = stats.ttest_ind(group1[0], group2[0])
                     significance[(method1, method2)] = t_stat, p_val
 
@@ -411,19 +389,25 @@ class Analysis:
             # Show the boxplot
             plt.show()
 
-
             return result, significance
 
         else:
             return result, significance
 
-
-    def compare_performance_extension(self, agent_generator, num_agents, performance_indicator, methods2compare, steps_ahead, scope_rad):
+    def compare_performance_extension(self, agent_generator, num_agents, performance_indicator, methods2compare,
+                                      steps_ahead, scope_rad):
 
         result, significance = self.compare_performance_methods(agent_generator, num_agents, performance_indicator, \
-                                      methods2compare, add_on=False, steps_ahead=steps_ahead, scope_rad=scope_rad, plotting=False)
-        result_with_extension, significance_with_extension = self.compare_performance_methods(agent_generator, num_agents, \
-                       performance_indicator, methods2compare, add_on=True, steps_ahead=steps_ahead, scope_rad=scope_rad, plotting=False)
+                                                                methods2compare, add_on=False, steps_ahead=steps_ahead,
+                                                                scope_rad=scope_rad, plotting=False)
+        result_with_extension, significance_with_extension = self.compare_performance_methods(agent_generator,
+                                                                                              num_agents, \
+                                                                                              performance_indicator,
+                                                                                              methods2compare,
+                                                                                              add_on=True,
+                                                                                              steps_ahead=steps_ahead,
+                                                                                              scope_rad=scope_rad,
+                                                                                              plotting=False)
 
         print("CALCULATING SIGNIFICANCE WITH ADD ON...")
         significance = dict()
@@ -465,50 +449,37 @@ class Analysis:
         # Show the boxplot
         plt.show()
 
-        return result, result_with_extension, significance
+        return result_total
 
-
-    def create_heat_map(self, agent_generator, num_agents, method, title_heat_map, waiting_cells, \
+    def create_heat_map(self, agent_generator, num_agents, amount_of_simulations, method, title_success_plot,
+                        waiting_cells, \
                         add_on, steps_ahead, scope_rad):
 
-        #################WITH CONVERGENCE######################
+        analysis, my_map = self.find_solutions(agent_generator=agent_generator, num_agents=num_agents, \
+                                               amount_of_simulations=amount_of_simulations, add_on=add_on,
+                                               steps_ahead=steps_ahead,
+                                               scope_rad=scope_rad, method=method, heat_map=True)
 
-        cv_values = []
-        cv_has_converged = False
-        amount_of_simulations = 1
-        while cv_has_converged is False or amount_of_simulations < 10:  # minimum of X simulations tried
-            print("Current simulation number: ", amount_of_simulations)
-            analysis, my_map = self.find_solutions(agent_generator=agent_generator, num_agents=num_agents, \
-                                                   amount_of_simulations=amount_of_simulations, add_on=add_on,
-                                                   steps_ahead=steps_ahead,
-                                                   scope_rad=scope_rad, method=method, heat_map=True)
-            heat_map = [[np.nan if cell else 0 for cell in row] for row in my_map]
-            for perf_dict in analysis['system performance per sim']:
-                if perf_dict is not None:
-                    paths = perf_dict['agent paths with waiting']
-                    for path in paths:
-                        if waiting_cells == False:  # if we want to see where every agent passes
-                            for cell in path:
+        heat_map = [[np.nan if cell else 0 for cell in row] for row in my_map]
+
+        for perf_dict in analysis['system performance per sim']:
+            if perf_dict is not None:
+                paths = perf_dict['agent paths with waiting']
+                for path in paths:
+                    if waiting_cells == False:  # if we want to see where every agent passes
+                        for cell in path:
+                            heat_map[cell[0]][cell[1]] += (
+                                        1 / amount_of_simulations)  # normalize with amount of simulations to get an understandable result
+                    else:
+                        cell_prev = 0
+                        for cell in path:
+                            if cell == path[-1]:
+                                break
+                            if cell == cell_prev and cell != path[
+                                0]:  # if agent has to wait, then the heat map gets hotter
                                 heat_map[cell[0]][cell[1]] += (
                                             1 / amount_of_simulations)  # normalize with amount of simulations to get an understandable result
-                        else:
-                            cell_prev = 0
-                            for cell in path:
-                                if cell == path[-1]:
-                                    break
-                                if cell == cell_prev and cell != path[
-                                    0]:  # if agent has to wait, then the heat map gets hotter
-                                    heat_map[cell[0]][cell[1]] += (
-                                                1 / amount_of_simulations)  # normalize with amount of simulations to get an understandable result
-                                cell_prev = cell
-
-            std_dev = np.nanstd(heat_map)
-            mean = np.nanmean(heat_map)
-            cv = std_dev / mean if mean != 0 else float('inf')
-            print("CV: ", cv)
-            cv_values.append(cv)
-            cv_has_converged = self.has_converged(values=cv_values, window_size=3, min_consecutive_windows=2)
-            amount_of_simulations += 1
+                            cell_prev = cell
 
         # Create the heatmap
         plt.figure(figsize=(12, 8))
@@ -518,26 +489,17 @@ class Analysis:
         print("adding title...")
         plt.title("Heat Map Visualization")
         print("saving heat map...")
-        filename = os.path.join('Graphs', title_heat_map)
+
+        filename = os.path.join('Graphs', title_success_plot)
         plt.savefig(filename)
         plt.close()  # Close the figure after saving
         print(f"Graph saved as {filename}")
         print('Stop manually!')
 
-        #Create heat map coefficient of variation plot
-        plt.figure(figsize=(10, 5))
-        plt.plot(cv_values, marker='o', linestyle='-', color='b')
-        plt.title('Heat map coefficient of variation')
-        plt.xlabel('Number of Simulations')
-        plt.ylabel('CV')
-        plt.grid(True)  # Turn on the grid
-        plt.show()
-
         return heat_map
 
-
     def local_sensitivity_analysis(self, agent_generator, num_agents, performance_indicators, methods2compare, add_on, \
-                                    steps_ahead, scope_rad, dP, parameters,map):
+                                   steps_ahead, scope_rad, dP, parameters):
         steps_ahead_min = int(floor(steps_ahead - dP * steps_ahead))
         steps_ahead_plus = int(ceil(steps_ahead + dP * steps_ahead))
 
@@ -552,44 +514,86 @@ class Analysis:
             results[performance_indicator] = dict()
             for parameter in parameters:
                 if parameter == 'Scope':
-                    result_scope_min, significance_scope_min = self.compare_performance_methods(agent_generator, num_agents, performance_indicator, \
-                                          methods2compare, add_on, steps_ahead, scope_rad_min, plotting=False)
+                    result_scope_min, significance_scope_min = self.compare_performance_methods(agent_generator,
+                                                                                                num_agents,
+                                                                                                performance_indicator, \
+                                                                                                methods2compare, add_on,
+                                                                                                steps_ahead,
+                                                                                                scope_rad_min,
+                                                                                                plotting=False)
 
-                    result_scope, significance_scope = self.compare_performance_methods(agent_generator, num_agents, performance_indicator, \
-                                                   methods2compare, add_on, steps_ahead, scope_rad, plotting=False)
+                    result_scope, significance_scope = self.compare_performance_methods(agent_generator, num_agents,
+                                                                                        performance_indicator, \
+                                                                                        methods2compare, add_on,
+                                                                                        steps_ahead, scope_rad,
+                                                                                        plotting=False)
 
-                    result_scope_plus, significance_scope_plus = self.compare_performance_methods(agent_generator, num_agents, \
-                           performance_indicator, methods2compare, add_on, steps_ahead, scope_rad_plus, plotting=False)
+                    result_scope_plus, significance_scope_plus = self.compare_performance_methods(agent_generator,
+                                                                                                  num_agents, \
+                                                                                                  performance_indicator,
+                                                                                                  methods2compare,
+                                                                                                  add_on, steps_ahead,
+                                                                                                  scope_rad_plus,
+                                                                                                  plotting=False)
 
-                    results[performance_indicator]['Scope'] = [[result_scope_min, significance_scope_min], [result_scope, significance_scope], \
-                                        [result_scope_plus, significance_scope_plus]]
+                    results[performance_indicator]['Scope'] = [[result_scope_min, significance_scope_min],
+                                                               [result_scope, significance_scope], \
+                                                               [result_scope_plus, significance_scope_plus]]
 
                 if parameter == 'Agents':
-                    result_scope_min, significance_scope_min = self.compare_performance_methods(agent_generator, num_agents_min, performance_indicator,
-                                            methods2compare, add_on, steps_ahead, scope_rad_min, plotting=False)
+                    result_scope_min, significance_scope_min = self.compare_performance_methods(agent_generator,
+                                                                                                num_agents_min,
+                                                                                                performance_indicator,
+                                                                                                methods2compare, add_on,
+                                                                                                steps_ahead,
+                                                                                                scope_rad_min,
+                                                                                                plotting=False)
 
-                    result_scope, significance_scope = self.compare_performance_methods(agent_generator, num_agents, performance_indicator, \
-                                                       methods2compare, add_on, steps_ahead, scope_rad, plotting=False)
+                    result_scope, significance_scope = self.compare_performance_methods(agent_generator, num_agents,
+                                                                                        performance_indicator, \
+                                                                                        methods2compare, add_on,
+                                                                                        steps_ahead, scope_rad,
+                                                                                        plotting=False)
 
-                    result_scope_plus, significance_scope_plus = self.compare_performance_methods(agent_generator, num_agents_plus, performance_indicator,
-                                                               methods2compare, add_on, steps_ahead, scope_rad_plus, plotting=False)
+                    result_scope_plus, significance_scope_plus = self.compare_performance_methods(agent_generator,
+                                                                                                  num_agents_plus,
+                                                                                                  performance_indicator,
+                                                                                                  methods2compare,
+                                                                                                  add_on, steps_ahead,
+                                                                                                  scope_rad_plus,
+                                                                                                  plotting=False)
 
-                    results[performance_indicator]['Agents'] = [[result_scope_min, significance_scope_min], [result_scope, significance_scope], \
-                                        [result_scope_plus, significance_scope_plus]]
+                    results[performance_indicator]['Agents'] = [[result_scope_min, significance_scope_min],
+                                                                [result_scope, significance_scope], \
+                                                                [result_scope_plus, significance_scope_plus]]
 
                 if parameter == 'Steps ahead':
-                    result_steps_min, significance_steps_min = self.compare_performance_methods(agent_generator, num_agents,
-                                        performance_indicator, methods2compare, add_on, steps_ahead_min, scope_rad_min, plotting=False)
+                    result_steps_min, significance_steps_min = self.compare_performance_methods(agent_generator,
+                                                                                                num_agents,
+                                                                                                performance_indicator,
+                                                                                                methods2compare, add_on,
+                                                                                                steps_ahead_min,
+                                                                                                scope_rad_min,
+                                                                                                plotting=False)
 
                     result_steps, significance_steps = self.compare_performance_methods(agent_generator, num_agents,
-                                                    performance_indicator, methods2compare, add_on, steps_ahead, scope_rad, plotting=False)
+                                                                                        performance_indicator,
+                                                                                        methods2compare, add_on,
+                                                                                        steps_ahead, scope_rad,
+                                                                                        plotting=False)
 
-                    result_steps_plus, significance_steps_plus = self.compare_performance_methods(agent_generator, num_agents,
-                                        performance_indicator, methods2compare, add_on, steps_ahead_plus, scope_rad_plus, plotting=False)
+                    result_steps_plus, significance_steps_plus = self.compare_performance_methods(agent_generator,
+                                                                                                  num_agents,
+                                                                                                  performance_indicator,
+                                                                                                  methods2compare,
+                                                                                                  add_on,
+                                                                                                  steps_ahead_plus,
+                                                                                                  scope_rad_plus,
+                                                                                                  plotting=False)
 
-                    results[performance_indicator]['Steps ahead'] = [[result_steps_min, significance_steps_min], [result_steps, significance_steps], \
-                                              [result_steps_plus, significance_steps_plus]]
-
+                    results[performance_indicator]['Steps ahead'] = [[result_steps_min, significance_steps_min],
+                                                                     [result_steps, significance_steps], \
+                                                                     [result_steps_plus, significance_steps_plus]]
 
         print("PERFORMING LOCAL SENSITIVITY ANALYSIS...")
         sensitivity = dict()
@@ -635,7 +639,7 @@ class Analysis:
                     })
 
         df = pd.DataFrame(extracted_data)
-        df.to_excel(f'Local_sensitivity_3{parameter,map}.xlsx', engine='openpyxl', index=False)
+        df.to_excel('Local_sensitivity.xlsx', engine='openpyxl', index=False)
         print("LOCAL SENSITIVITY DATA SAVED IN Local_sensitivity.xlsx...")
 
         return df
@@ -652,8 +656,8 @@ class Analysis:
         amount_of_simulations = 15
 
         # Generate Latin Hypercube Samples for the two parameters
-        lhs_1 = np.random.uniform(ranges[0][0], ranges[0][1]+1, n_samples)
-        lhs_2 = np.random.uniform(ranges[1][0], ranges[1][1]+1, n_samples)
+        lhs_1 = np.random.uniform(ranges[0][0], ranges[0][1] + 1, n_samples)
+        lhs_2 = np.random.uniform(ranges[1][0], ranges[1][1] + 1, n_samples)
 
         # # Create a dataframe to store the parameter combinations: LHS
         # param_df = pd.DataFrame({parameters[0]: lhs_1, parameters[1]: lhs_2})
@@ -661,8 +665,8 @@ class Analysis:
         # param_df = param_df.astype(int)
 
         # Create a dataframe to store the parameter combinations: Sampling
-        par_1 = np.arange(ranges[0][0], ranges[0][1]+1, 1)
-        par_2 = np.arange(ranges[1][0], ranges[1][1]+1, 1)
+        par_1 = np.arange(ranges[0][0], ranges[0][1] + 1, 1)
+        par_2 = np.arange(ranges[1][0], ranges[1][1] + 1, 1)
 
         param_df = pd.DataFrame(columns=[parameters[0], parameters[1]])
         for i in par_1:
@@ -687,7 +691,6 @@ class Analysis:
             # Set the parameters to the current combination
             self.param1 = row[parameters[0]]
             self.param2 = row[parameters[1]]
-
 
             # Run simulation
             if str(parameters[0]) == 'num_agents':
@@ -754,7 +757,6 @@ class Analysis:
                 df = pd.concat([df, performance], ignore_index=True)
                 print('DF', df)
 
-
         # results = pd.DataFrame(columns=df.columns, data=data)
         # results.drop(columns=[str(parameters[0]), str(parameters[1])], inplace=True)
         results = df
@@ -777,7 +779,9 @@ class Analysis:
                 print('P-VALUE', p_values)
 
                 # Calculate Partial correlation coefficient
-                partial_corr = pg.partial_corr(data=results, x=str(parameters[0]), y=str(parameters[1]), covar='average travel time', method='spearman')['r']
+                partial_corr = \
+                pg.partial_corr(data=results, x=str(parameters[0]), y=str(parameters[1]), covar='average travel time',
+                                method='spearman')['r']
                 partial_correlation_coefficients.append(partial_corr)
                 print('PCC', partial_correlation_coefficients)
             else:
@@ -798,6 +802,7 @@ class Analysis:
         print('DONE')
         return sensitivity_results, results
 
+
 # 'success rate': 0, 'system performance per sim': []
 # agent_generator, num_agents, amount_of_simulations, method, add_on, steps_ahead, scope_rad
 
@@ -814,43 +819,29 @@ OPTIONS FOR SENSITIVITY PARAMETERS: ['Scope', 'Agents', 'Steps ahead']
 
 '''
 
-#map1_analysis.compare_performance_methods(agent_generator='left-right', num_agents=5, performance_indicator='total time', \
+# map1_analysis.compare_performance_methods(agent_generator='left-right', num_agents=5, performance_indicator='total time', \
 #                                          methods2compare=['Implicit', 'Explicit', 'Random'], steps_ahead=20, scope_rad=2, add_on=False)
 
-#map1_analysis.compare_performance_extension(agent_generator='left-right', num_agents=8, performance_indicator='total time', \
+# map1_analysis.compare_performance_extension(agent_generator='left-right', num_agents=8, performance_indicator='total time', \
 #                                          methods2compare=['Implicit', 'Explicit', 'Random'], steps_ahead=20, scope_rad=2)
-#
+
 # map1_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6, performance_indicators=['total time', \
 #                                                     'total distance traveled', 'total amount of conflicts'], \
 #                                           methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False, steps_ahead=20, scope_rad=2, \
 #                                          dP=0.2, parameters=['Agents'])
 
-
-lst_parameters = ['Scope', 'Agents', 'Steps ahead']
-lst_maps_analysis = [map1_analysis, map2_analysis, map3_analysis]
-
-for i in lst_parameters:
-    map1_analysis.local_sensitivity_analysis(agent_generator='left-right', num_agents=4,\
-                                             performance_indicators=['average travel time',
-'average travel distance', 'average conflicts'], \
-                                             methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
-                                             steps_ahead=12, scope_rad=2, \
-                                             dP=0.2, parameters=[i],map='map1')
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
 
 # print(map1_analysis.global_sensitivity(['scope_rad', 'num_agents'], [[2,6], [2,8]]), map1_analysis.global_sensitivity(['scope_rad', 'steps_ahead'], [[2,6], [8,15]]), map1_analysis.global_sensitivity(['steps_ahead', 'num_agents'], [[8,15], [2,8]]))
-print(map1_analysis.global_sensitivity(['steps_ahead', 'num_agents'], [[8,15], [2,8]]))
-for i in lst_parameters:
-    map2_analysis.local_sensitivity_analysis(agent_generator='left-right', num_agents=4,\
-                                             performance_indicators=['average travel time',
-'average travel distance', 'average conflicts'], \
-                                             methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
-                                             steps_ahead=12, scope_rad=2, \
-                                             dP=0.2, parameters=[i],map='map2')
+print(map1_analysis.global_sensitivity(['steps_ahead', 'num_agents'], [[8, 15], [2, 8]]))
 
-for i in lst_parameters:
-    map3_analysis.local_sensitivity_analysis(agent_generator='left-right', num_agents=4,\
-                                             performance_indicators=['average travel time',
-'average travel distance', 'average conflicts'], \
-                                             methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False,\
-                                             steps_ahead=12, scope_rad=2, \
-                                             dP=0.2, parameters=[i],map='map3')
+# print(map1_analysis.global_sensitivity(['scope_rad', 'steps_ahead'], [[2,6], [8,14]]), map1_analysis.global_sensitivity(['steps_ahead', 'num_agents'], [[8,14], [2,10]]))
+# agent_generator = 'random'
+# num_agents = 12 # [2,12]
+# amount_of_simulations = 10
+# method = 'Explicit'
+# add_on = False
+# steps_ahead = 4 # [3,15]
+# scope_rad = 2 # [2,8] as 8 is the maximum scope to see the whole height of the map
+# print(map1_analysis.find_solutions(agent_generator, num_agents, amount_of_simulations, method, add_on, steps_ahead, scope_rad))
