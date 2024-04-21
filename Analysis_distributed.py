@@ -303,7 +303,7 @@ class Analysis:
 
         print("PLOTTING SUCCESS RATE FIGURE NOW")
         plt.figure(figsize=(10, 6))
-        
+
         # Plot each method's results with a distinct line
         num_agents_range = range(1, max_agents + 1)
         for method, successes in success_output.items():
@@ -318,8 +318,8 @@ class Analysis:
         plt.savefig(os.path.join('Graphs', 'success_rate_figure.png'))
         print("CLOSE GRAPH TO OBTAIN DATA")
         plt.show()
+        return
 
-        return success_output
 
     def compare_performance_methods(self, agent_generator, num_agents, performance_indicator, methods2compare, add_on, \
                                     steps_ahead, scope_rad, plotting=True):
@@ -366,7 +366,6 @@ class Analysis:
 
         if plotting == True:
             print("PLOTTING THE RESULTS NOW...")
-
             labels, data, cv_values = [], [], []
             for key, values in result.items():
                 labels.append(key)
@@ -375,7 +374,6 @@ class Analysis:
 
             # Calculate the number of rows for the coefficients of variation plots
             num_rows = len(methods2compare)
-
 
             # Create a figure with subplots for the coefficients of variation
             fig, axs = plt.subplots(num_rows, 1, figsize=(10, 4 * num_rows))
@@ -431,7 +429,6 @@ class Analysis:
             t_stat, p_val = stats.ttest_ind(result[method][0], result_with_extension[method][0])
             method_added = method + " extended"
             significance[(method, method_added)] = t_stat, p_val
-
 
         print("PLOTTING THE RESULTS WITH ADD ON NOW...")
         labels, data = [], []
@@ -538,7 +535,7 @@ class Analysis:
 
 
     def local_sensitivity_analysis(self, agent_generator, num_agents, performance_indicators, methods2compare, add_on, \
-                                    steps_ahead, scope_rad, dP, parameters):
+                                    steps_ahead, scope_rad, dP, parameters,map):
         steps_ahead_min = int(floor(steps_ahead - dP * steps_ahead))
         steps_ahead_plus = int(ceil(steps_ahead + dP * steps_ahead))
 
@@ -636,7 +633,7 @@ class Analysis:
                     })
 
         df = pd.DataFrame(extracted_data)
-        df.to_excel('Local_sensitivity.xlsx', engine='openpyxl', index=False)
+        df.to_excel(f'Local_sensitivity_{parameter,map}.xlsx', engine='openpyxl', index=False)
         print("LOCAL SENSITIVITY DATA SAVED IN Local_sensitivity.xlsx...")
 
         return df
@@ -654,3 +651,16 @@ OPTIONS FOR PERFORMANCE INDICATORS: ['maximum time', 'total time', 'total distan
 OPTIONS FOR SENSITIVITY PARAMETERS: ['Scope', 'Agents', 'Steps ahead']
 
 '''
+
+#map1_analysis.compare_performance_methods(agent_generator='left-right', num_agents=5, performance_indicator='total time', \
+#                                          methods2compare=['Implicit', 'Explicit', 'Random'], steps_ahead=20, scope_rad=2, add_on=False)
+
+#map1_analysis.compare_performance_extension(agent_generator='left-right', num_agents=8, performance_indicator='total time', \
+#                                          methods2compare=['Implicit', 'Explicit', 'Random'], steps_ahead=20, scope_rad=2)
+
+map1_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6, performance_indicators=['total time', \
+                                                    'total distance traveled', 'total amount of conflicts'], \
+                                          methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False, steps_ahead=20, scope_rad=2, \
+                                         dP=0.2, parameters=['Agents'])
+
+

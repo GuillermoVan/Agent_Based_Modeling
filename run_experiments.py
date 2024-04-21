@@ -18,10 +18,10 @@ from single_agent_planner import get_sum_of_cost
 
 SOLVER = "Distributed"
 
-method = "Random"
+method = "Explicit"
 add_on = True
 steps_ahead = 20
-scope_rad = 20
+scope_rad = 2
 
 def print_mapf_instance(my_map, starts, goals):
     """
@@ -130,6 +130,7 @@ if __name__ == '__main__':
     # In PyCharm, they can be added as parameters in the configuration.
 
     result_file = open("results.csv", "w", buffering=1)
+    log_file = open("decisions.log", "w", buffering=1)
 
     for file in sorted(glob.glob(args.instance)):
         print("***Import an instance***")
@@ -149,7 +150,7 @@ if __name__ == '__main__':
             paths = solver.find_solution()
         elif args.solver == "Distributed":  # Wrapper of distributed planning solver class
             print("***Run Distributed Planning***")
-            solver = DistributedPlanningSolver(my_map, starts, goals, method, add_on, steps_ahead, scope_rad) #!!!TODO: add your own distributed planning implementation here.
+            solver = DistributedPlanningSolver(my_map, starts, goals, method, add_on, steps_ahead, scope_rad, log_file) #!!!TODO: add your own distributed planning implementation here.
             paths = solver.find_solution()
         else: 
             raise RuntimeError("Unknown solver!")
@@ -166,3 +167,4 @@ if __name__ == '__main__':
             # animation.save("output.mp4", 1.0) # install ffmpeg package to use this option
             animation.show()
     result_file.close()
+    log_file.close()
