@@ -271,7 +271,7 @@ class Analysis:
         else:
             return analysis
 
-    def success_plotter(self, agent_generator, method, add_on, max_agents, amount_of_simulations, title_success_plot, steps_ahead, scope_rad):
+    def success_result(self, agent_generator, method, add_on, max_agents, amount_of_simulations, steps_ahead, scope_rad):
         success = []
         num_agents_range = range(1,max_agents+1)
         for num_agents in num_agents_range:
@@ -281,20 +281,45 @@ class Analysis:
                                            method=method, add_on=add_on, steps_ahead=steps_ahead, scope_rad=scope_rad)
             success.append(analysis['success rate'])
 
+        return success
+
+    def success_plotter(self, agent_generator, max_agents, amount_of_simulations, steps_ahead, scope_rad):
+        success_output = {'Explicit': None, 'Random': None, 'Implicit': None}
+        for method in ['Explicit', 'Random', 'Implicit']:
+            print("This method's success rate is now being evaluated: ", method)
+            add_on = False
+            if 'add-on' in method:
+                add_on = True
+                method_name = method.replace(" with add-on", "")
+            else:
+                method_name = method
+            success = self.success_result(agent_generator=agent_generator, method=method_name, add_on=add_on,
+                                                    max_agents=max_agents, amount_of_simulations=amount_of_simulations, steps_ahead=steps_ahead,
+                                                    scope_rad=scope_rad)
+            success_output[method] = success
+
+        # Setting up the plot
+        print("DATA: ", success_output)
+
+        print("PLOTTING SUCCESS RATE FIGURE NOW")
         plt.figure(figsize=(10, 6))
-        plt.plot(num_agents_range, success, marker='o', linestyle='-')
+        
+        # Plot each method's results with a distinct line
+        num_agents_range = range(1, max_agents + 1)
+        for method, successes in success_output.items():
+            plt.plot(num_agents_range, successes, marker='o', linestyle='-', label=method)
+
         plt.xlabel('Number of Agents')
         plt.ylabel('Success Rate')
         plt.title('Success Rate vs. Number of Agents')
         plt.grid(True)
-
-        filename = os.path.join('Graphs', title_success_plot)
-        plt.savefig(filename)
-        plt.close()  # Close the figure after saving
-        print(f"Graph saved as {filename}")
+        plt.legend()  # Include a legend to differentiate the lines
+        print("SAVING SUCCESS RATE GRAPH")
+        plt.savefig(os.path.join('Graphs', 'success_rate_figure.png'))
+        print("CLOSE GRAPH TO OBTAIN DATA")
         plt.show()
-        return
 
+        return success_output
 
     def compare_performance_methods(self, agent_generator, num_agents, performance_indicator, methods2compare, add_on, \
                                     steps_ahead, scope_rad, plotting=True):
@@ -341,6 +366,7 @@ class Analysis:
 
         if plotting == True:
             print("PLOTTING THE RESULTS NOW...")
+
             labels, data, cv_values = [], [], []
             for key, values in result.items():
                 labels.append(key)
@@ -349,6 +375,7 @@ class Analysis:
 
             # Calculate the number of rows for the coefficients of variation plots
             num_rows = len(methods2compare)
+
 
             # Create a figure with subplots for the coefficients of variation
             fig, axs = plt.subplots(num_rows, 1, figsize=(10, 4 * num_rows))
@@ -384,6 +411,7 @@ class Analysis:
             # Show the boxplot
             plt.show()
 
+
             return result, significance
 
         else:
@@ -403,6 +431,7 @@ class Analysis:
             t_stat, p_val = stats.ttest_ind(result[method][0], result_with_extension[method][0])
             method_added = method + " extended"
             significance[(method, method_added)] = t_stat, p_val
+
 
         print("PLOTTING THE RESULTS WITH ADD ON NOW...")
         labels, data = [], []
@@ -436,48 +465,74 @@ class Analysis:
 
         # Show the boxplot
         plt.show()
-        
-        return result_total
+
+        return result, result_with_extension, significance
 
 
-    def create_heat_map(self, agent_generator, num_agents, amount_of_simulations, method, title_success_plot, waiting_cells, \
+    def create_heat_map(self, agent_generator, num_agents, method, title_heat_map, waiting_cells, \
                         add_on, steps_ahead, scope_rad):
 
-        analysis, my_map = self.find_solutions(agent_generator=agent_generator, num_agents=num_agents, \
-                                               amount_of_simulations=amount_of_simulations, add_on=add_on, steps_ahead=steps_ahead,
-                                               scope_rad=scope_rad, method=method, heat_map=True)
+        #################WITH CONVERGENCE######################
 
-        heat_map = [[np.nan if cell else 0 for cell in row] for row in my_map]
+        cv_values = []
+        cv_has_converged = False
+        amount_of_simulations = 1
+        while cv_has_converged is False or amount_of_simulations < 10:  # minimum of X simulations tried
+            print("Current simulation number: ", amount_of_simulations)
+            analysis, my_map = self.find_solutions(agent_generator=agent_generator, num_agents=num_agents, \
+                                                   amount_of_simulations=amount_of_simulations, add_on=add_on,
+                                                   steps_ahead=steps_ahead,
+                                                   scope_rad=scope_rad, method=method, heat_map=True)
+            heat_map = [[np.nan if cell else 0 for cell in row] for row in my_map]
+            for perf_dict in analysis['system performance per sim']:
+                if perf_dict is not None:
+                    paths = perf_dict['agent paths with waiting']
+                    for path in paths:
+                        if waiting_cells == False:  # if we want to see where every agent passes
+                            for cell in path:
+                                heat_map[cell[0]][cell[1]] += (
+                                            1 / amount_of_simulations)  # normalize with amount of simulations to get an understandable result
+                        else:
+                            cell_prev = 0
+                            for cell in path:
+                                if cell == path[-1]:
+                                    break
+                                if cell == cell_prev and cell != path[
+                                    0]:  # if agent has to wait, then the heat map gets hotter
+                                    heat_map[cell[0]][cell[1]] += (
+                                                1 / amount_of_simulations)  # normalize with amount of simulations to get an understandable result
+                                cell_prev = cell
 
-        for perf_dict in analysis['system performance per sim']:
-            if perf_dict is not None:
-                paths = perf_dict['agent paths with waiting']
-                for path in paths:
-                    if waiting_cells == False: #if we want to see where every agent passes
-                        for cell in path:
-                            heat_map[cell[0]][cell[1]] += (1/amount_of_simulations) #normalize with amount of simulations to get an understandable result
-                    else:
-                        cell_prev = 0
-                        for cell in path:
-                            if cell == path[-1]:
-                                break
-                            if cell == cell_prev and cell != path[0]: #if agent has to wait, then the heat map gets hotter
-                                heat_map[cell[0]][cell[1]] += (1/amount_of_simulations) #normalize with amount of simulations to get an understandable result
-                            cell_prev = cell
+            std_dev = np.nanstd(heat_map)
+            mean = np.nanmean(heat_map)
+            cv = std_dev / mean if mean != 0 else float('inf')
+            print("CV: ", cv)
+            cv_values.append(cv)
+            cv_has_converged = self.has_converged(values=cv_values, window_size=3, min_consecutive_windows=2)
+            amount_of_simulations += 1
 
         # Create the heatmap
         plt.figure(figsize=(12, 8))
         print("creating heat map...")
-        sns.heatmap(heat_map, cmap="coolwarm", annot=True, cbar=True, linewidths=.5, cbar_kws={'label': 'Average amount of agents passing per simulation'})
+        sns.heatmap(heat_map, cmap="coolwarm", annot=True, cbar=True, linewidths=.5,
+                    cbar_kws={'label': 'Average amount of agents passing per simulation'})
         print("adding title...")
         plt.title("Heat Map Visualization")
         print("saving heat map...")
-
-        filename = os.path.join('Graphs', title_success_plot)
+        filename = os.path.join('Graphs', title_heat_map)
         plt.savefig(filename)
         plt.close()  # Close the figure after saving
         print(f"Graph saved as {filename}")
         print('Stop manually!')
+
+        #Create heat map coefficient of variation plot
+        plt.figure(figsize=(10, 5))
+        plt.plot(cv_values, marker='o', linestyle='-', color='b')
+        plt.title('Heat map coefficient of variation')
+        plt.xlabel('Number of Simulations')
+        plt.ylabel('CV')
+        plt.grid(True)  # Turn on the grid
+        plt.show()
 
         return heat_map
 
@@ -589,7 +644,7 @@ class Analysis:
 
 
 map1_analysis = Analysis(input_path='instances\\map1.txt', timeout_time=2, threshold_percent=30)
-map2=_analysis = Analysis(input_path='instances\\map2.txt', timeout_time=2, threshold_percent=30)
+map2_analysis = Analysis(input_path='instances\\map2.txt', timeout_time=2, threshold_percent=30)
 map3_analysis = Analysis(input_path='instances\\map3.txt', timeout_time=2, threshold_percent=30)
 
 '''
@@ -599,16 +654,3 @@ OPTIONS FOR PERFORMANCE INDICATORS: ['maximum time', 'total time', 'total distan
 OPTIONS FOR SENSITIVITY PARAMETERS: ['Scope', 'Agents', 'Steps ahead']
 
 '''
-
-#map1_analysis.compare_performance_methods(agent_generator='left-right', num_agents=5, performance_indicator='total time', \
-#                                          methods2compare=['Implicit', 'Explicit', 'Random'], steps_ahead=20, scope_rad=2, add_on=False)
-
-#map1_analysis.compare_performance_extension(agent_generator='left-right', num_agents=8, performance_indicator='total time', \
-#                                          methods2compare=['Implicit', 'Explicit', 'Random'], steps_ahead=20, scope_rad=2)
-
-map1_analysis.local_sensitivity_analysis(agent_generator='top-bottom', num_agents=6, performance_indicators=['total time', \
-                                                    'total distance traveled', 'total amount of conflicts'], \
-                                          methods2compare=['Implicit', 'Explicit', 'Random'], add_on=False, steps_ahead=20, scope_rad=2, \
-                                         dP=0.2, parameters=['Agents'])
-
-
